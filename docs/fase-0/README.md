@@ -19,7 +19,7 @@
 - ☑ Interfaces de fronteira
 - ☑ Fixtures e `measure.sh`
 - ☑ READMEs
-- ☐ `go build ./... && go test ./...` verde (**Go não está instalado no PC de desenvolvimento**; instalar e rodar)
+- ☑ `make test` e `make build` verdes no PC (2026-10-09; sem arquivos de teste ainda, só compilação)
 
 ## Decisões e desvios do TSD
 

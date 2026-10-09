@@ -8,7 +8,7 @@ Micro-PaaS auto-hospedado que roda **nativamente no Termux** (Android, sem root,
 
 | Fase | Descrição | Status | Docs |
 |---|---|---|---|
-| 0 | Bootstrap do repositório | ☑ esqueleto criado (build não verificado: Go não instalado no PC) | [docs/fase-0](docs/fase-0/README.md) |
+| 0 | Bootstrap do repositório | ☑ concluída (`make test` e `make build` verdes) | [docs/fase-0](docs/fase-0/README.md) |
 | 1 | Prova de Conceito no aparelho (go/no-go) | ☐ | [docs/fase-1](docs/fase-1/README.md) |
 | 2 | MVP sem painel (`droidd` + `droid` + API) | ☐ | [docs/fase-2](docs/fase-2/README.md) |
 | 3 | Painel web | ☐ | [docs/fase-3](docs/fase-3/README.md) |
