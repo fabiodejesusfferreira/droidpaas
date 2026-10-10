@@ -18,13 +18,15 @@ Aparelho: Samsung Galaxy M22 (`SM-M225FV`) · Android 13 (SDK 33) · kernel `4.1
 | V-12 | Socket Unix em `$HOME` funciona | **Confirmada**: socket criado em `$HOME/poc/run/t.sock` com `srw-------` (0600); `curl --unix-socket` responde; o **hook rodando sob o `sshd`** alcançou o socket e entregou as linhas `old new ref` | `sock.log`: `hook: 000… 63ee343… refs/heads/pc-test` | ADR-13 mantido (socket Unix, sem TCP) |
 | V-13 | Binário Go resolve DNS | **Confirmada** para binário compilado **no aparelho** (`GOOS=android`): `net.LookupHost("example.com")` devolveu 4 IPs e `https://example.com` → `200 OK` (TLS ok) | `dns: [2606:4700:10::ac42:93f3 … 104.20.23.154 …] err: <nil>`; `https OK: 200 OK` | Build no aparelho (P-05) validado; `build-android` (`GOOS=linux`) segue **não validado** |
 | V-14 | Go do Termux ≥ 1.22 | **Confirmada**: Go 1.27.1 (`GOOS=android`, `arm64`) | `go version` | `ServeMux` com padrões disponível; sem roteador de terceiros |
-| V-15 | Termux:Boot executa no boot sem bloqueio do One UI | | | |
+| V-15 | Termux:Boot executa no boot sem bloqueio do One UI | **Confirmada**: após reboot, `~/.termux/boot/droidpaas` executou (`boot.log`: 02:52:48Z), o `runsvdir` subiu e os 4 serviços `poc-*` voltaram **sozinhos, sem `down`**; o `start-services` do usuário também rodou (caddy `:8080`, uptime-kuma, painel.js, sshd) e **coexiste** com o PoC (portas 18080/12019). Sonda `http_code=200` e túnel público `200` após o boot. Observação: `filebrowser` e `pm2` não aparecem em execução (apps do usuário, causa não investigada) | `boot.log`; `sv status` com todos `run` (183 s); `poc-app` `listening on 20001` às 02:52:41Z; CSV pós-boot `…,02:52:39Z,…,200` | Boot via Termux:Boot viável; usar arquivo próprio em `~/.termux/boot/` |
 
 ## Medições (24 h)
 
 **Início do 1G:** 2026-10-10T02:48Z. Serviço runit `poc-measure` (`scripts/poc/measure.sh`, 60 s) grava `~/poc-metrics.csv` no celular com: bateria/temperatura, RAM disponível, PIDs de `poc-app`/`poc-caddy`/`poc-cloudflared` (PID que muda = reinício) e `http_code` de uma sonda a cada ciclo via Caddy. Boot: `~/.termux/boot/droidpaas` (arquivo novo; chama `start-services.sh` e registra `~/poc/boot.log`).
 
-Plano: reiniciar o aparelho **uma vez agora** (V-15, RNF-07) e só depois contar as 24 h de processos vivos, ligado na tomada e com a tela apagada.
+**Reboot (V-15, RNF-07):** feito. Serviços já estavam em `run` às 02:52:40Z, ≤ ~8 s antes do registro do boot script (02:52:48Z) e dentro de ~2 min do desligamento (último CSV pré-boot 02:50:35Z → primeiro pós-boot 02:52:39Z). O tempo desde o kernel não é mensurável (`/proc/uptime` negado); RNF-07 (≤ 60 s **a partir do Termux:Boot**) atendido com folga. RAM disponível caiu para ~0,7–1,0 GB com os apps do usuário no ar (carga realista do aparelho).
+
+**Relógio das 24 h:** inicia em **2026-10-10T02:55Z** (pós-reboot, na tomada). Colheita prevista a partir de **2026-10-11T02:55Z**. A persistência do ajuste do phantom killer após o reboot **não** foi verificada (`dumpsys` exige adb); o veredito vem da sobrevivência dos processos nas 24 h.
 
 _Resumo final do CSV (temperatura máx., RAM mínima, reinícios, falhas da sonda): a preencher após as 24 h._
 
