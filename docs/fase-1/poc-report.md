@@ -22,7 +22,11 @@ Aparelho: Samsung Galaxy M22 (`SM-M225FV`) · Android 13 (SDK 33) · kernel `4.1
 
 ## Medições (24 h)
 
-_Resumo do CSV de `measure.sh`: temperatura máx., RAM mínima disponível, reinícios._
+**Início do 1G:** 2026-10-10T02:48Z. Serviço runit `poc-measure` (`scripts/poc/measure.sh`, 60 s) grava `~/poc-metrics.csv` no celular com: bateria/temperatura, RAM disponível, PIDs de `poc-app`/`poc-caddy`/`poc-cloudflared` (PID que muda = reinício) e `http_code` de uma sonda a cada ciclo via Caddy. Boot: `~/.termux/boot/droidpaas` (arquivo novo; chama `start-services.sh` e registra `~/poc/boot.log`).
+
+Plano: reiniciar o aparelho **uma vez agora** (V-15, RNF-07) e só depois contar as 24 h de processos vivos, ligado na tomada e com a tela apagada.
+
+_Resumo final do CSV (temperatura máx., RAM mínima, reinícios, falhas da sonda): a preencher após as 24 h._
 
 ## Decisões alteradas em relação ao TSD
 
@@ -37,4 +41,5 @@ _Resumo do CSV de `measure.sh`: temperatura máx., RAM mínima disponível, rein
 - **Aviso do `cloudflared` sobre `ping_group_range`:** `WRN … /proc/sys/net/ipv4/ping_group_range: permission denied`. Só desliga o proxy de ICMP; sem efeito no tráfego HTTP. Ignorar.
 - **Automação (SSH do PC para o Termux):** os blocos 1D em diante foram executados por SSH com uma chave de operação sem comando forçado (`droidpaas-ops`). **Remover do celular ao fim da Fase 1** (`~/.ssh/authorized_keys`: linhas `droidpaas-ops` e `droidpaas-poc-git`/`poc_git`).
 - `ssh` interno em script lê o stdin do script (`sh -s`); usar `</dev/null` nos comandos ssh/git de roteiros automatizados.
+- **Conflito de portas com apps já hospedados (achado):** o `~/.termux/boot/start-services` do usuário já sobe `caddy file-server … --listen :8080` (com Admin API em `127.0.0.1:2019` por padrão), `filebrowser`, `uptime-kuma`, `pm2` e `painel.js`. As portas padrão do TSD (Caddy 8080, Admin 2019) **colidem** com isso no boot. No PoC o Caddy usa `127.0.0.1:18080` e Admin `127.0.0.1:12019`; o `cloudflared` aponta para a 18080. Na Fase 2: **portas configuráveis** em `droidd.toml` (`proxy.listen`, `proxy.admin`) e `droidd init` deve detectar portas ocupadas e a coexistência com scripts de boot existentes (não sobrescrever o `start-services` do usuário; usar arquivo próprio em `~/.termux/boot/`).
 - Rastreio dos desvios dos demais blocos: _a preencher_.
