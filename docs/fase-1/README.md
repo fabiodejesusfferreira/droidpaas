@@ -4,8 +4,8 @@
 
 ## Checklist
 
-- ☐ 1A Ambiente: Termux + API + Boot, pacotes, adb sem fio, phantom killer, isenções de bateria (V-08, V-14)
-- ☐ 1B App Node sob `termux-services` + Caddy via Admin API (V-02, V-04, V-09, V-10)
+- ☑ 1A Ambiente (V-01 e V-14 confirmados; V-08 só o veredito de 24 h no 1G): Termux + API + Boot, pacotes, adb sem fio, phantom killer, isenções de bateria (V-08, V-14) — roteiro: [1A-ambiente.md](1A-ambiente.md)
+- ☐ 1B App Node sob `termux-services` + Caddy via Admin API (V-02, V-04, V-09, V-10) — roteiro: [1B-supervisao-proxy.md](1B-supervisao-proxy.md)
 - ☐ 1C `cloudflared` modo token + wildcard; entrega do token fora do `ps` (V-05, Q-03)
 - ☐ 1D `authorized_keys` com `command=`, `git http-backend`, socket Unix (V-06, V-07, V-12)
 - ☐ 1E Go no Termux: versão, SQLite, DNS (V-03, V-13, V-14)
