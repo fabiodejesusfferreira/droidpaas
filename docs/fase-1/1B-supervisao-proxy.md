@@ -59,13 +59,15 @@ printf 's1000000\nn5\n' > ~/poc/logs/poc-app/config
 
 chmod +x $T/run $T/log/run
 touch $T/down
+start=$(date +%s)   # marcado imediatamente antes do mv, para medir só a detecção
 mv $T $SV/poc-app
 ```
 
 ### 2.1 Medir o tempo de detecção (V-02)
 
+Rode logo em seguida, no mesmo colar:
+
 ```bash
-start=$(date +%s)
 for i in $(seq 1 30); do
   [ -e $SV/poc-app/supervise/ok ] && break
   sleep 1
@@ -95,7 +97,16 @@ ps -o pid,ni,args -p $PID               # NI deve ser 10 (ou próximo; veja a no
 cat ~/poc/logs/poc-app/current          # linha "listening on 20001" com timestamp
 ```
 
-Nota: `node` pode ser filho do processo de `chpst`/shell. Se `ps` mostrar `NI` ≠ 10, confira também `cat /proc/$PID/stat | cut -d' ' -f19` e anote o que o Android entrega (alguns kernels limitam `nice`).
+Nota: o `chpst` faz `exec`, então o PID do serviço já é o do `node`. Se `ps` mostrar `NI` ≠ 10, confira também `cut -d' ' -f19 /proc/$PID/stat` e isole o `chpst`:
+
+```bash
+chpst -n 10 sh -c 'cut -d" " -f19 /proc/$$/stat'   # esperado: 10
+nice -n 10 sh -c 'cut -d" " -f19 /proc/$$/stat'
+```
+
+Anote o que o Android entrega (alguns kernels/SELinux limitam `nice`).
+
+> **Dica ao colar:** no terminal do celular, cole **um bloco por vez** e espere o prompt voltar. Se aparecer `>` no início da linha, o shell está esperando fechar um bloco: `Ctrl+C` e recomece.
 
 ### 2.4 Reinício automático e parada (RNF-06)
 
@@ -205,22 +216,35 @@ curl -si -H 'Host: outro.local' http://127.0.0.1:8080/ | head -1   # 404
 mkdir -p ~/poc/static && echo '<h1>estatico</h1>' > ~/poc/static/index.html
 ```
 
-Edite `full.json` e adicione, antes da rota 404 final:
-
-```json
-{ "match": [{ "host": ["blog.local"] }],
-  "handle": [{ "handler": "file_server", "root": "/data/data/com.termux/files/home/poc/static" }],
-  "terminal": true },
-{ "match": [{ "host": ["parado.local"] }],
-  "handle": [{ "handler": "static_response", "status_code": "503", "body": "DroidPaaS: app parado." }],
-  "terminal": true },
-```
-
-Reaplique o `POST /load` e teste:
+Cole **um bloco só** (o arquivo completo; não edite o anterior). O `$HOME` é expandido na hora porque o `EOF` não tem aspas:
 
 ```bash
-curl -s -H 'Host: blog.local' http://127.0.0.1:8080/        # <h1>estatico</h1>
-curl -si -H 'Host: parado.local' http://127.0.0.1:8080/ | head -1   # 503
+cat > ~/poc/caddy/full2.json <<EOF
+{
+  "admin": { "listen": "127.0.0.1:2019" },
+  "apps": { "http": { "servers": { "dp": {
+    "listen": ["127.0.0.1:8080"],
+    "automatic_https": { "disable": true },
+    "routes": [
+      { "match": [{ "host": ["poc.local"] }],
+        "handle": [{ "handler": "reverse_proxy", "upstreams": [{ "dial": "127.0.0.1:20001" }] }],
+        "terminal": true },
+      { "match": [{ "host": ["blog.local"] }],
+        "handle": [{ "handler": "file_server", "root": "$HOME/poc/static" }],
+        "terminal": true },
+      { "match": [{ "host": ["parado.local"] }],
+        "handle": [{ "handler": "static_response", "status_code": "503", "body": "DroidPaaS: app parado." }],
+        "terminal": true },
+      { "handle": [{ "handler": "static_response", "status_code": "404",
+        "body": "DroidPaaS: nenhum app para este host." }] }
+    ]
+  } } } }
+}
+EOF
+curl -s -o /dev/null -w "load: %{http_code}\n" -X POST -H 'Content-Type: application/json' \
+  --data @$HOME/poc/caddy/full2.json http://127.0.0.1:2019/load
+curl -s -H 'Host: blog.local' http://127.0.0.1:8080/                  # <h1>estatico</h1>
+curl -si -H 'Host: parado.local' http://127.0.0.1:8080/ | head -1     # 503
 ```
 
 ### 4.4 Caddy sobrevive ao "droidd" e reaplica config

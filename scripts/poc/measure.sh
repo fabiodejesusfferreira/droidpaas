@@ -4,7 +4,7 @@ OUT="${1:-$HOME/poc-metrics.csv}"
 SVC="${2:-poc-app}"          # nome do serviço runit a observar
 INTERVAL="${3:-60}"
 
-[ -f "$OUT" ] || echo "ts,batt_pct,batt_temp_c,plugged,mem_avail_kb,load1,app_rss_kb" > "$OUT"
+[ -f "$OUT" ] || echo "ts,batt_pct,batt_temp_c,plugged,mem_avail_kb,app_rss_kb" > "$OUT"
 
 while :; do
   ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -13,10 +13,9 @@ while :; do
   tmp=$(printf '%s' "$b"  | jq -r '.temperature // ""')
   plg=$(printf '%s' "$b"  | jq -r '.plugged // ""')
   mem=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
-  load=$(cut -d' ' -f1 /proc/loadavg)
   pid=$(cat "$PREFIX/var/service/$SVC/supervise/pid" 2>/dev/null)
   rss=""
   [ -n "$pid" ] && rss=$(awk '/VmRSS/ {print $2}' "/proc/$pid/status" 2>/dev/null)
-  echo "$ts,$pct,$tmp,$plg,$mem,$load,$rss" >> "$OUT"
+  echo "$ts,$pct,$tmp,$plg,$mem,$rss" >> "$OUT"
   sleep "$INTERVAL"
 done
