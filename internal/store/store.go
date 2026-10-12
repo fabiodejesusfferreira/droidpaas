@@ -22,7 +22,7 @@ type Store struct{ DB *sql.DB }
 
 // Open abre (ou cria) o banco e aplica as migrações pendentes.
 func Open(ctx context.Context, path string) (*Store, error) {
-	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
@@ -68,6 +68,7 @@ func migrate(ctx context.Context, db *sql.DB, fsys fs.FS, path string) error {
 		}
 	}
 
+	hadData := len(applied) > 0 // só faz backup de um banco que já existia antes desta execução
 	backedUp := false
 	for _, f := range files {
 		v, err := strconv.Atoi(strings.SplitN(f, "_", 2)[0])
@@ -78,7 +79,7 @@ func migrate(ctx context.Context, db *sql.DB, fsys fs.FS, path string) error {
 			continue
 		}
 		// Backup antes de migrar um banco que já tem dados (R-10, §14.3).
-		if !backedUp && len(applied) > 0 {
+		if !backedUp && hadData {
 			bak := fmt.Sprintf("%s.bak-%s", path, time.Now().UTC().Format("20060102T150405Z"))
 			if _, err := db.ExecContext(ctx, "vacuum into ?", bak); err != nil {
 				return fmt.Errorf("backup antes de migrar: %w", err)
@@ -136,10 +137,4 @@ func (s *Store) CreateUser(ctx context.Context, name, hash string) (int64, error
 		return 0, err
 	}
 	return res.LastInsertId()
-}
-
-func (s *Store) CreateToken(ctx context.Context, userID int64, name, hash, prefix string) error {
-	_, err := s.DB.ExecContext(ctx, `insert into api_tokens(user_id, name, token_hash, prefix, created_at) values(?,?,?,?,?)`,
-		userID, name, hash, prefix, time.Now().UnixMilli())
-	return err
 }

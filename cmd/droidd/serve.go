@@ -15,6 +15,8 @@ import (
 
 	"droidpaas/internal/api"
 	"droidpaas/internal/config"
+	"droidpaas/internal/crypt"
+	"droidpaas/internal/events"
 	"droidpaas/internal/store"
 )
 
@@ -53,8 +55,13 @@ func runServe(args []string) error {
 	}
 	log.Info("banco pronto", "db", cfg.DBPath(), "deploys_interrompidos", interrupted, "deploys_na_fila", queued)
 
-	pub := &http.Server{Addr: cfg.HTTP.PanelAddr, Handler: api.Public(version), ReadHeaderTimeout: 10 * time.Second}
-	internal := &http.Server{Handler: api.Internal(), ReadHeaderTimeout: 10 * time.Second}
+	box, err := crypt.Load(cfg.KeyPath())
+	if err != nil {
+		return err
+	}
+	srv := &api.Server{Store: st, Events: &events.Log{DB: st.DB, Log: log}, Box: box, Cfg: cfg, Version: version, Log: log}
+	pub := &http.Server{Addr: cfg.HTTP.PanelAddr, Handler: srv.Public(), ReadHeaderTimeout: 10 * time.Second}
+	internal := &http.Server{Handler: srv.Internal(), ReadHeaderTimeout: 10 * time.Second}
 
 	sock := cfg.SocketPath()
 	os.Remove(sock) // socket velho de uma queda anterior

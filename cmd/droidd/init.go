@@ -161,7 +161,7 @@ func createAdmin(ctx context.Context, st *store.Store, user string, pwStdin bool
 	if err != nil {
 		return err
 	}
-	if err := st.CreateToken(ctx, uid, "bootstrap", th, prefix); err != nil {
+	if _, err := st.CreateToken(ctx, uid, "bootstrap", th, prefix, "full"); err != nil {
 		return err
 	}
 	fmt.Fprintf(out, "\nPrimeiro token de API (exibido UMA vez; guarde-o agora):\n\n  %s\n\n", tok)

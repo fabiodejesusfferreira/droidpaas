@@ -5,7 +5,7 @@
 ## Sub-fases
 
 - ☑ 2A Fundação: config, slog, SQLite + migrações, `droidd init/serve` → AT-01 (ver resultado abaixo)
-- ☐ 2B API base, auth por token, eventos, socket Unix
+- ☑ 2B API base, auth por token, eventos, socket Unix
 - ☐ 2C Runit + modelo de apps, portas, envdir cifrado → AT-08
 - ☐ 2D Proxy Caddy + páginas 404/503 → AT-12
 - ☐ 2E Build, deploy, rollback (node + static) → AT-04, AT-05, AT-06
@@ -43,3 +43,9 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 - O `init` só escreve `~/.termux/boot/droidpaas` quando `$PREFIX` existe e o arquivo não existe; nunca altera outros scripts de boot.
 - Portas padrão do proxy já seguem o TSD v0.2 (`18080`/`12019`).
 
+
+### 2B — API base (concluída em 2026-10-12)
+
+`internal/api` (`Server`, auth Bearer com escopos `full`/`git`, erro JSON padronizado, JSON estrito, paginação `limit`/`before`), `internal/events`, `internal/crypt` (AES-256-GCM com `master.key`). Endpoints: `/healthz`, `/api/v1/me`, `/tokens` (GET/POST/DELETE), `/settings` (GET/PUT) e `PUT /settings/tunnel` (token cifrado, nunca devolvido), `/events`.
+
+**Desvios:** migração `0002_scope_crash.sql` adiciona `api_tokens.scope` (o DDL do TSD não tinha a coluna dos escopos do §13.2) e `apps.crashed_at` (o estado `crashed` precisa sobreviver a um restart do `droidd`, senão o reconciliador religaria o app em loop). `last_used_at` do token é gravado no máximo 1×/min. SQLite com `synchronous=NORMAL` (recomendado com WAL).
