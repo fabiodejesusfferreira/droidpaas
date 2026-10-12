@@ -87,6 +87,7 @@ func runInit(args []string, stdin io.Reader, out, errw io.Writer) error {
 		return err
 	}
 
+	linkBins(cfg, out)
 	writeBootScript(cfg, out)
 	fmt.Fprint(out, checklist)
 	return nil
@@ -192,3 +193,25 @@ Próximos passos (checklist pós-instalação):
   - Os serviços runit (droidd, dp-caddy) serão criados na sub-fase 2C; por ora, rode "droidd serve" à mão.
   - Configure o domínio base e o túnel quando houver domínio na Cloudflare.
 `
+
+// linkBins deixa droidd e droid em $DP_HOME/bin (o hook e o authorized_keys apontam para lá).
+func linkBins(cfg config.Config, out io.Writer) {
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	exe, _ = filepath.EvalSymlinks(exe)
+	for _, name := range []string{"droidd", "droid"} {
+		src := filepath.Join(filepath.Dir(exe), name)
+		dst := cfg.Dir("bin", name)
+		if _, err := os.Stat(src); err != nil || src == dst {
+			continue
+		}
+		if _, err := os.Lstat(dst); err == nil {
+			continue
+		}
+		if os.Symlink(src, dst) == nil {
+			fmt.Fprintln(out, "link:", dst, "->", src)
+		}
+	}
+}

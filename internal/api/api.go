@@ -18,6 +18,7 @@ import (
 	"droidpaas/internal/crypt"
 	"droidpaas/internal/deploy"
 	"droidpaas/internal/events"
+	"droidpaas/internal/gitsrv"
 	"droidpaas/internal/store"
 )
 
@@ -30,6 +31,7 @@ type Server struct {
 	Log     *slog.Logger
 	Apps    *apps.Service
 	Deploy  *deploy.Engine
+	Git     *gitsrv.Service
 	// OnChange acorda o reconciliador depois de mudar o estado desejado.
 	OnChange func()
 }
@@ -54,6 +56,7 @@ func (s *Server) Public() http.Handler {
 	s.registerEvents(mux)
 	s.registerApps(mux)
 	s.registerDeploys(mux)
+	s.registerSSHKeys(mux)
 	mux.HandleFunc("GET /api/v1/me", s.full(s.handleMe))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, 404, "not_found", "rota inexistente")
@@ -65,6 +68,7 @@ func (s *Server) Public() http.Handler {
 func (s *Server) Internal() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /internal/ping", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("pong\n")) })
+	mux.HandleFunc("POST /internal/hook/post-receive", s.handleHook)
 	return mux
 }
 

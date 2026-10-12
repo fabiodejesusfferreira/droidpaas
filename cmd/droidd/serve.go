@@ -19,6 +19,7 @@ import (
 	"droidpaas/internal/crypt"
 	"droidpaas/internal/deploy"
 	"droidpaas/internal/events"
+	"droidpaas/internal/gitsrv"
 	"droidpaas/internal/proxy"
 	"droidpaas/internal/reconcile"
 	"droidpaas/internal/runit"
@@ -66,13 +67,15 @@ func runServe(args []string) error {
 		return err
 	}
 	ev := &events.Log{DB: st.DB, Log: log}
-	svc := &apps.Service{Store: st, Runit: runit.New(cfg.Runit.ServiceDir), Box: box, Events: ev, Cfg: cfg}
-	srv := &api.Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: version, Log: log, Apps: svc}
+	gs := &gitsrv.Service{Store: st, Cfg: cfg}
+	svc := &apps.Service{Git: gs, Store: st, Runit: runit.New(cfg.Runit.ServiceDir), Box: box, Events: ev, Cfg: cfg}
+	srv := &api.Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: version, Log: log, Apps: svc, Git: gs}
 	rt := runit.New(cfg.Runit.ServiceDir)
 	eng := deploy.New(&deploy.Engine{Store: st, Apps: svc, Runit: rt, Git: system.GitCLI{}, Runner: system.ExecRunner{}, Cfg: cfg, Events: ev, Log: log})
 	svc.Deploying = eng.IsDeploying
 	srv.Deploy = eng
 	loop := reconcile.New(cfg.Reconcile.Interval.D(), log,
+		reconcile.Step{Name: "git-keys", Run: gs.SyncKeys},
 		reconcile.Step{Name: "proxy", Run: proxy.NewController(st, cfg, rt, proxy.NewClient(cfg.Proxy.Admin), ev).Step})
 	svc.Wake, srv.OnChange, eng.Wake = loop.Wake, loop.Wake, loop.Wake
 	go eng.Run(ctx)

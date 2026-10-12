@@ -8,6 +8,7 @@ E2E_HOME=${E2E_HOME:-$HOME/dp-e2e}
 PANEL=127.0.0.1:18090
 PROXY=127.0.0.1:28080
 ADMIN=127.0.0.1:22019
+SSH_PORT=28022
 API=http://$PANEL/api/v1
 PASS=0; FAILS=0
 
@@ -62,6 +63,7 @@ e2e_stop_all() {
     done
   fi
   [ -f "$E2E_HOME/runsvdir.pid" ] && kill "$(cat "$E2E_HOME/runsvdir.pid")" 2>/dev/null
+  [ -f "$E2E_HOME/ssh/sshd.pid" ] && kill "$(cat "$E2E_HOME/ssh/sshd.pid")" 2>/dev/null
   pkill -f "droidpaas-e2e" 2>/dev/null
   pkill -f "$E2E_HOME/bin/droidd" 2>/dev/null
   pkill -f "caddy run --config $E2E_HOME" 2>/dev/null
@@ -70,7 +72,7 @@ e2e_stop_all() {
 
 e2e_setup() {
   e2e_stop_all
-  rm -rf "$E2E_HOME/home" "$E2E_HOME/sv" "$E2E_HOME"/*.pid "$E2E_HOME"/*.log
+  rm -rf "$E2E_HOME/home" "$E2E_HOME/sv" "$E2E_HOME"/*.pid "$E2E_HOME"/*.log "$E2E_HOME/authorized_keys"
   mkdir -p "$E2E_HOME/sv"
   say "init"
   local out
@@ -79,7 +81,7 @@ e2e_setup() {
   [ -n "$TOKEN" ] || { echo "init falhou: $out"; exit 1; }
   local toml="$E2E_HOME/home/etc/droidd.toml"
   sed -i "s#^  PanelAddr.*##; s#panel_addr = .*#panel_addr = '$PANEL'#; s#listen = '127.0.0.1:18080'#listen = '$PROXY'#; s#admin = '127.0.0.1:12019'#admin = '$ADMIN'#; s#service_dir = .*#service_dir = '$E2E_HOME/sv'#; s#prefix = 'dp-'#prefix = 'dpt-'#; s#range_start = .*#range_start = 21000#; s#range_end = .*#range_end = 21099#; s#interval = '10s'#interval = '2s'#" "$toml"
-  sed -i "s#ssh_port = .*#ssh_port = 8022#" "$toml"
+  sed -i "s#ssh_port = .*#ssh_port = $SSH_PORT#; s#authorized_keys = .*#authorized_keys = '$E2E_HOME/authorized_keys'#" "$toml"
   # runsvdir próprio (exec -a dá um nome reconhecível para o teardown)
   (exec -a droidpaas-e2e-runsvdir runsvdir "$E2E_HOME/sv" >/dev/null 2>&1 </dev/null &) 
   sleep 1; pgrep -f droidpaas-e2e-runsvdir | head -1 > "$E2E_HOME/runsvdir.pid"
@@ -88,6 +90,27 @@ e2e_setup() {
   echo $! > "$E2E_HOME/droidd.pid"
   wait_until 20 curl -sf "http://$PANEL/healthz" || { echo "droidd não subiu"; cat "$E2E_HOME/droidd.log"; exit 1; }
   ok "sandbox pronto (token ${TOKEN:0:9}…)"
+}
+
+# sshd próprio do sandbox (chaves, authorized_keys e porta próprios; não toca no sshd real do aparelho)
+e2e_sshd() {
+  local d=$E2E_HOME/ssh; rm -rf "$d"; mkdir -p "$d"; chmod 700 "$d"
+  ssh-keygen -q -t ed25519 -N '' -f "$d/host" && ssh-keygen -q -t ed25519 -N '' -f "$d/client" -C e2e-client
+  cat > "$d/sshd_config" <<CFG
+Port $SSH_PORT
+ListenAddress 127.0.0.1
+HostKey $d/host
+AuthorizedKeysFile $E2E_HOME/authorized_keys
+PidFile $d/sshd.pid
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+StrictModes no
+CFG
+  /data/data/com.termux/files/usr/bin/sshd -f "$d/sshd_config" -E "$d/sshd.log"
+  wait_until 10 test -f "$d/sshd.pid" || { echo "sshd do sandbox não subiu"; cat "$d/sshd.log"; exit 1; }
+  SSH_USER=$(whoami)
+  GIT_SSH_COMMAND="ssh -i $d/client -p $SSH_PORT -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR"
+  export GIT_SSH_COMMAND SSH_USER
 }
 
 e2e_teardown() {

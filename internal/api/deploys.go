@@ -1,12 +1,14 @@
 package api
 
 import (
+	"droidpaas/internal/gitsrv"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"droidpaas/internal/deploy"
 	"droidpaas/internal/store"
@@ -186,4 +188,8 @@ func (s *Server) registerDeploys(mux *http.ServeMux) {
 		b, _ := json.Marshal(map[string]string{"status": status})
 		sse.event("end", "", string(b))
 	}))
+}
+
+func deployOpts(u *gitsrv.Update) deploy.EnqueueOpts {
+	return deploy.EnqueueOpts{SHA: u.New, Ref: strings.TrimPrefix(u.Ref, "refs/heads/")}
 }

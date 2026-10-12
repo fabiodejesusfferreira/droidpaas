@@ -9,7 +9,7 @@
 - ☑ 2C Runit + modelo de apps, portas, envdir cifrado → AT-08 (a parte de apps/envdir validada com `sv`/`chpst` reais)
 - ☑ 2D Proxy Caddy + páginas 404/503 → AT-12 (rota estática testada na 2E, quando houver release)
 - ☑ 2E Build, deploy, rollback (todos os runtimes) → AT-04, AT-05, AT-06
-- ☐ 2F Git SSH + hook → AT-03
+- ☑ 2F Git SSH + hook → AT-03
 - ☐ 2G Reconciliador, crash loop, logs de runtime → AT-09, AT-10
 - ☐ 2H CLI `droid` + runtimes python/go/custom → AT-07
 - ☐ 2I Túnel, Git HTTP, backup, docs, soak 72 h → AT-11
@@ -86,3 +86,11 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 - Deploy num app **parado** ativa a release mas não inicia o processo. Deploy num app estático para o processo da release anterior, se havia.
 - O `static_dir` efetivo (app > `droidpaas.toml`) fica no plano salvo da release e o proxy o lê de lá.
 - Cancelar só é possível antes da troca de release (`409 too_late` depois).
+
+### 2F — Git por SSH e hook (concluída em 2026-10-12)
+
+`internal/gitsrv` (repo bare + hook com caminhos absolutos, `ParseShellCommand` estrito, bloco gerenciado `# BEGIN/END DROIDPAAS` no `authorized_keys`, validação de chave pública sem opções), `internal/client` (cliente HTTP por socket Unix + `PostReceive`), `droid git-shell` e `droid hook post-receive`, `POST /internal/hook/post-receive` (log do deploy em streaming; exit code no trailer `X-Droid-Exit`), `GET/POST/DELETE /ssh-keys` e o passo `git-keys` do reconciliador (regrava o bloco ao subir). `droidd init` agora linka `droidd` e `droid` em `$DP_HOME/bin`.
+
+**Teste no aparelho** (`test/e2e/2f-git.sh`, 29 verificações, com um `sshd` próprio do sandbox na porta 28022): `git push` real por SSH mostra `remote: DroidPaaS: deploy #1 … succeeded` e o app responde pelo hostname (AT-03); build quebrado → o push é aceito, o erro do build aparece no terminal e a v1 segue no ar (AT-04); push em outro branch não dispara deploy; `ls`, shell interativo, app inexistente, `../../etc.git` e chave não cadastrada são negados; remover a chave pela API limpa o `authorized_keys` e fecha o acesso.
+
+**Decisões:** o post-receive nunca desfaz o push (o commit já foi recebido); o exit code do hook reflete o deploy. Se o droidd estiver fora do ar o hook avisa e manda rodar `droid deploy`. O `git-shell` exporta `DROID_KEY_ID` para o hook. `ssh_port` passou a ser configurável (`git.ssh_port`, padrão 8022) e aparece na URL do remote.
