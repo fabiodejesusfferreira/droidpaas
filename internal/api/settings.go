@@ -62,6 +62,12 @@ func (s *Server) registerSettings(mux *http.ServeMux) {
 				return
 			}
 		}
+		if _, ok := in["base_domain"]; ok {
+			if err := s.Apps.SyncAutoDomains(r.Context()); err != nil {
+				s.internalErr(w, err)
+				return
+			}
+		}
 		s.Events.Info(r.Context(), "settings.updated", nil, "configurações alteradas", map[string]any{"keys": keys(in)})
 		s.wake()
 		m, _ := s.effectiveSettings(r)

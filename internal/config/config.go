@@ -61,6 +61,7 @@ type Config struct {
 	} `toml:"deploy"`
 	Git struct {
 		SSHEnabled     bool   `toml:"ssh_enabled"`
+		SSHPort        int    `toml:"ssh_port"`
 		HTTPEnabled    bool   `toml:"http_enabled"`
 		AutoCreateApps bool   `toml:"auto_create_apps"`
 		AuthorizedKeys string `toml:"authorized_keys"`
@@ -96,6 +97,7 @@ func Default() Config {
 	c.Deploy.HealthTimeout = Duration(30 * time.Second)
 	c.Deploy.HealthInterval = Duration(time.Second)
 	c.Git.SSHEnabled, c.Git.HTTPEnabled = true, true
+	c.Git.SSHPort = 8022
 	c.Git.AuthorizedKeys = "~/.ssh/authorized_keys"
 	c.Reconcile.Interval = Duration(10 * time.Second)
 	c.Reconcile.CrashLoopWindow = Duration(60 * time.Second)

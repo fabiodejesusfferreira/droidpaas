@@ -12,10 +12,12 @@ import (
 	"strings"
 	"testing"
 
+	"droidpaas/internal/apps"
 	"droidpaas/internal/auth"
 	"droidpaas/internal/config"
 	"droidpaas/internal/crypt"
 	"droidpaas/internal/events"
+	"droidpaas/internal/runit"
 	"droidpaas/internal/store"
 )
 
@@ -37,7 +39,10 @@ func newEnv(t *testing.T) *env {
 	cfg := config.Default()
 	cfg.SetHome(t.TempDir())
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	srv := &Server{Store: st, Events: &events.Log{DB: st.DB, Log: log}, Box: box, Cfg: cfg, Version: "test", Log: log}
+	ev := &events.Log{DB: st.DB, Log: log}
+	rt := runit.NewFake()
+	svc := &apps.Service{Store: st, Runit: rt, Box: box, Events: ev, Cfg: cfg, Prefix: "/p", PortFree: func(int) bool { return true }}
+	srv := &Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: "test", Log: log, Apps: svc}
 	uid, err := st.CreateUser(ctx, "admin", "hash")
 	if err != nil {
 		t.Fatal(err)
@@ -200,4 +205,20 @@ func TestUnknownRoute(t *testing.T) {
 	if code, m, _ := e.do(t, "GET", "/api/v1/nada", e.token, nil); code != 404 || m["error"].(map[string]any)["code"] != "not_found" {
 		t.Fatal(code, m)
 	}
+}
+
+// doRaw envia um corpo JSON literal (para testar campos inválidos).
+func (e *env) doRaw(t *testing.T, method, path, token, body string) (int, map[string]any, []byte) {
+	t.Helper()
+	req, _ := http.NewRequest(method, e.ts.URL+path, strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(resp.Body)
+	var m map[string]any
+	json.Unmarshal(raw, &m)
+	return resp.StatusCode, m, raw
 }

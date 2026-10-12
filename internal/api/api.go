@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"droidpaas/internal/apps"
 	"droidpaas/internal/auth"
 	"droidpaas/internal/config"
 	"droidpaas/internal/crypt"
@@ -26,6 +27,7 @@ type Server struct {
 	Cfg     config.Config
 	Version string
 	Log     *slog.Logger
+	Apps    *apps.Service
 	// OnChange acorda o reconciliador depois de mudar o estado desejado.
 	OnChange func()
 }
@@ -48,6 +50,7 @@ func (s *Server) Public() http.Handler {
 	s.registerTokens(mux)
 	s.registerSettings(mux)
 	s.registerEvents(mux)
+	s.registerApps(mux)
 	mux.HandleFunc("GET /api/v1/me", s.full(s.handleMe))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, 404, "not_found", "rota inexistente")

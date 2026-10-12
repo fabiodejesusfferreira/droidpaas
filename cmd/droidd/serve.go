@@ -14,9 +14,11 @@ import (
 	"time"
 
 	"droidpaas/internal/api"
+	"droidpaas/internal/apps"
 	"droidpaas/internal/config"
 	"droidpaas/internal/crypt"
 	"droidpaas/internal/events"
+	"droidpaas/internal/runit"
 	"droidpaas/internal/store"
 )
 
@@ -59,7 +61,9 @@ func runServe(args []string) error {
 	if err != nil {
 		return err
 	}
-	srv := &api.Server{Store: st, Events: &events.Log{DB: st.DB, Log: log}, Box: box, Cfg: cfg, Version: version, Log: log}
+	ev := &events.Log{DB: st.DB, Log: log}
+	svc := &apps.Service{Store: st, Runit: runit.New(cfg.Runit.ServiceDir), Box: box, Events: ev, Cfg: cfg}
+	srv := &api.Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: version, Log: log, Apps: svc}
 	pub := &http.Server{Addr: cfg.HTTP.PanelAddr, Handler: srv.Public(), ReadHeaderTimeout: 10 * time.Second}
 	internal := &http.Server{Handler: srv.Internal(), ReadHeaderTimeout: 10 * time.Second}
 

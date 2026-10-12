@@ -6,7 +6,7 @@
 
 - ☑ 2A Fundação: config, slog, SQLite + migrações, `droidd init/serve` → AT-01 (ver resultado abaixo)
 - ☑ 2B API base, auth por token, eventos, socket Unix
-- ☐ 2C Runit + modelo de apps, portas, envdir cifrado → AT-08
+- ☑ 2C Runit + modelo de apps, portas, envdir cifrado → AT-08 (a parte de apps/envdir validada com `sv`/`chpst` reais)
 - ☐ 2D Proxy Caddy + páginas 404/503 → AT-12
 - ☐ 2E Build, deploy, rollback (node + static) → AT-04, AT-05, AT-06
 - ☐ 2F Git SSH + hook → AT-03
@@ -49,3 +49,17 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 `internal/api` (`Server`, auth Bearer com escopos `full`/`git`, erro JSON padronizado, JSON estrito, paginação `limit`/`before`), `internal/events`, `internal/crypt` (AES-256-GCM com `master.key`). Endpoints: `/healthz`, `/api/v1/me`, `/tokens` (GET/POST/DELETE), `/settings` (GET/PUT) e `PUT /settings/tunnel` (token cifrado, nunca devolvido), `/events`.
 
 **Desvios:** migração `0002_scope_crash.sql` adiciona `api_tokens.scope` (o DDL do TSD não tinha a coluna dos escopos do §13.2) e `apps.crashed_at` (o estado `crashed` precisa sobreviver a um restart do `droidd`, senão o reconciliador religaria o app em loop). `last_used_at` do token é gravado no máximo 1×/min. SQLite com `synchronous=NORMAL` (recomendado com WAL).
+
+### 2C — Runit e modelo de apps (concluída em 2026-10-12)
+
+`internal/runit` (`ServiceManager` real via `sv` + `Fake`, geradores de `run`/`log/run`/`start.sh`, `EncodeEnvValue`), `internal/apps` (criar/editar/remover, portas, start/stop/restart, estado observado, domínios automáticos por `base_domain`, variáveis cifradas + envdir), `store` (apps, domínios, env, releases) e a API `/apps`, `/apps/{name}/env`, `/apps/{name}/domains`, `start|stop|restart`.
+
+**Teste no aparelho** (`go test -tags termux ./internal/runit`, com `runsvdir` próprio em diretório temporário): criação atômica + detecção pelo `runsvdir` em **1,2 s**; `kill -9` → novo PID em **1,04 s** (RNF-06 ≤ 5 s); `Down`, `Restart` e `Remove` OK, sem ressuscitar o serviço; o `run` gerado entrega ao app, via `chpst -e` real, valores com quebra de linha, vazios e com aspas/`$`/`=`.
+
+**Achados e desvios:**
+- **`chpst` não executa scripts com shebang no Termux** (`unable to run: … file does not exist`; binários funcionam). O TSD A.1 (`exec chpst … start.sh`) foi corrigido para `exec chpst -e … -n N sh start.sh`.
+- **envdir:** só a primeira linha vale e arquivo vazio apaga a variável, então `\n` vira NUL no arquivo (o `chpst` converte de volta) e valor vazio é gravado como `\n`. Espaços/tabs finais são cortados pelo `chpst` (limitação conhecida).
+- Variáveis reservadas (rejeitadas na API): `PORT`, `HOST`, `NODE_ENV`, `DP_*`.
+- `releases.runtime` (migração `0003`) guarda o runtime resolvido da release (NODE_ENV, start e rollback).
+- O `umask` do Termux é `077`: os testes não assumem modos exatos de arquivos de serviço.
+- Revelar um segredo é `GET /apps/{name}/env/{key}` (auditado, sem registrar o valor).
