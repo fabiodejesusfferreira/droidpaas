@@ -18,6 +18,8 @@ import (
 	"droidpaas/internal/config"
 	"droidpaas/internal/crypt"
 	"droidpaas/internal/events"
+	"droidpaas/internal/proxy"
+	"droidpaas/internal/reconcile"
 	"droidpaas/internal/runit"
 	"droidpaas/internal/store"
 )
@@ -64,6 +66,12 @@ func runServe(args []string) error {
 	ev := &events.Log{DB: st.DB, Log: log}
 	svc := &apps.Service{Store: st, Runit: runit.New(cfg.Runit.ServiceDir), Box: box, Events: ev, Cfg: cfg}
 	srv := &api.Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: version, Log: log, Apps: svc}
+	rt := runit.New(cfg.Runit.ServiceDir)
+	loop := reconcile.New(cfg.Reconcile.Interval.D(), log,
+		reconcile.Step{Name: "proxy", Run: proxy.NewController(st, cfg, rt, proxy.NewClient(cfg.Proxy.Admin), ev).Step})
+	svc.Wake, srv.OnChange = loop.Wake, loop.Wake
+	go loop.Run(ctx)
+
 	pub := &http.Server{Addr: cfg.HTTP.PanelAddr, Handler: srv.Public(), ReadHeaderTimeout: 10 * time.Second}
 	internal := &http.Server{Handler: srv.Internal(), ReadHeaderTimeout: 10 * time.Second}
 

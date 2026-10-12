@@ -32,7 +32,11 @@ func (f *Fake) Ensure(_ context.Context, spec ServiceSpec) error {
 		s.Spec = spec
 		return nil
 	}
-	f.Svcs[spec.Name] = &FakeService{Spec: spec}
+	s := &FakeService{Spec: spec}
+	f.Svcs[spec.Name] = s
+	if !spec.Down { // como o runsv: serviço novo sem arquivo `down` sobe sozinho
+		f.start(s)
+	}
 	return nil
 }
 

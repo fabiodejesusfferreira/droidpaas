@@ -7,7 +7,7 @@
 - ☑ 2A Fundação: config, slog, SQLite + migrações, `droidd init/serve` → AT-01 (ver resultado abaixo)
 - ☑ 2B API base, auth por token, eventos, socket Unix
 - ☑ 2C Runit + modelo de apps, portas, envdir cifrado → AT-08 (a parte de apps/envdir validada com `sv`/`chpst` reais)
-- ☐ 2D Proxy Caddy + páginas 404/503 → AT-12
+- ☑ 2D Proxy Caddy + páginas 404/503 → AT-12 (rota estática testada na 2E, quando houver release)
 - ☐ 2E Build, deploy, rollback (node + static) → AT-04, AT-05, AT-06
 - ☐ 2F Git SSH + hook → AT-03
 - ☐ 2G Reconciliador, crash loop, logs de runtime → AT-09, AT-10
@@ -63,3 +63,11 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 - `releases.runtime` (migração `0003`) guarda o runtime resolvido da release (NODE_ENV, start e rollback).
 - O `umask` do Termux é `077`: os testes não assumem modos exatos de arquivos de serviço.
 - Revelar um segredo é `GET /apps/{name}/env/{key}` (auditado, sem registrar o valor).
+
+### 2D — Proxy Caddy (concluída em 2026-10-12)
+
+`internal/proxy`: `Generate` (config completa e determinística: painel opcional → apps por nome → fallback 404; golden file em `testdata/golden.json`, validado com `caddy validate` no aparelho), `Client` (`POST /load`), `Applier` (hash da config, backoff 2 s…60 s, `Invalidate`), `BuildInput` (estado desejado → rotas: só roteia para app `running`, com release e sem crash loop; release `static` vira `file_server` em `current/<static_dir>`), `Controller` (passo do reconciliador: garante `dp-caddy`, grava `proxy/caddy.json`, reaplica quando o Caddy reinicia) e páginas 404/503 embutidas (sobrescrevíveis em `proxy/pages/`). `internal/reconcile` ganhou o laço base (`Loop`, `Wake`).
+
+**Decisão:** o `dp-caddy` sobe com `caddy run --config proxy/caddy.json`, arquivo que o `droidd` regrava a cada mudança. Assim o Caddy volta com as rotas certas depois de um restart ou de um reboot **mesmo sem o droidd** (RNF-08). Também usa `XDG_CONFIG_HOME`/`XDG_DATA_HOME` sob `$DP_HOME/proxy` e `GOMEMLIMIT=128MiB` (no PoC o Caddy gravava em `~/caddy` e `~/.config/caddy`).
+
+**Teste no aparelho** (`test/e2e/2d-proxy.sh`, sandbox com `runsvdir` próprio, prefixo `dpt-` e portas 18090/28080/22019; 9 verificações): host desconhecido → 404; app sem release → 503; `kill -9` no Caddy → ele volta servindo a mesma rota; `kill -9` no `droidd` → proxy segue servindo 503/404.
