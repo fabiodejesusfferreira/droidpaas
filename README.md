@@ -2,7 +2,7 @@
 
 Micro-PaaS auto-hospedado que roda **nativamente no Termux** (Android, sem root, sem Docker): deploy por `git push`, supervisão via runit, proxy Caddy, túnel Cloudflare e painel web leve. Dispositivo de referência: Samsung Galaxy M22 (4 GB de RAM).
 
-> Projeto em fase de planejamento/PoC. Nada aqui foi validado no aparelho ainda; os números do TSD são metas, não medições.
+> A Fase 1 (PoC) validou as premissas centrais no aparelho (ver [docs/fase-1/poc-report.md](docs/fase-1/poc-report.md)); os números de desempenho do TSD seguem sendo metas até a Fase 2 medi-los.
 
 ## Status
 
