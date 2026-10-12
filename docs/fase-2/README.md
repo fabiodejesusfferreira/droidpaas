@@ -10,7 +10,7 @@
 - ☑ 2D Proxy Caddy + páginas 404/503 → AT-12 (rota estática testada na 2E, quando houver release)
 - ☑ 2E Build, deploy, rollback (todos os runtimes) → AT-04, AT-05, AT-06
 - ☑ 2F Git SSH + hook → AT-03
-- ☐ 2G Reconciliador, crash loop, logs de runtime → AT-09, AT-10
+- ☑ 2G Reconciliador, crash loop, logs de runtime → AT-09, AT-10
 - ☐ 2H CLI `droid` + runtimes python/go/custom → AT-07
 - ☐ 2I Túnel, Git HTTP, backup, docs, soak 72 h → AT-11
 
@@ -94,3 +94,16 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 **Teste no aparelho** (`test/e2e/2f-git.sh`, 29 verificações, com um `sshd` próprio do sandbox na porta 28022): `git push` real por SSH mostra `remote: DroidPaaS: deploy #1 … succeeded` e o app responde pelo hostname (AT-03); build quebrado → o push é aceito, o erro do build aparece no terminal e a v1 segue no ar (AT-04); push em outro branch não dispara deploy; `ls`, shell interativo, app inexistente, `../../etc.git` e chave não cadastrada são negados; remover a chave pela API limpa o `authorized_keys` e fecha o acesso.
 
 **Decisões:** o post-receive nunca desfaz o push (o commit já foi recebido); o exit code do hook reflete o deploy. Se o droidd estiver fora do ar o hook avisa e manda rodar `droid deploy`. O `git-shell` exporta `DROID_KEY_ID` para o hook. `ssh_port` passou a ser configurável (`git.ssh_port`, padrão 8022) e aparece na URL do remote.
+
+### 2G — Reconciliador, crash loop e logs de runtime (concluída em 2026-10-12)
+
+`internal/reconcile` (`Loop` + passos `domains`, `git-keys`, `apps`, `proxy` e `logs`; `CrashTracker` com janela deslizante; remoção de serviços órfãos só depois de 3 ciclos sem dono; o passo de apps não compete com um deploy em andamento), `internal/logs` (`Tail` atravessando a rotação do svlogd e `Follow` por polling de 500 ms que sobrevive à rotação sem perder linhas) e `GET /apps/{name}/logs?tail=&follow=1` (texto ou SSE `line` com `ts`/`text`).
+
+**Teste no aparelho** (`test/e2e/2g-reconcile.sh`, 24 verificações): `kill -9` no `droidd` → app e Caddy mantêm o mesmo PID e continuam respondendo; ao voltar, o `droidd` retoma o estado sem reiniciar o app (AT-10/RNF-08); tail e follow trazem o stdout do app (linha nova em ≤ 2 s); `kill -9` repetido → `crashed`, serviço parado, proxy 503, evento `app.crash_loop` com as últimas linhas do log, sem reinício infinito, e `Start` tira do estado (AT-09); serviço órfão removido após o período de graça.
+
+**Bugs reais encontrados pelo e2e (e corrigidos):**
+- **Apps iniciados com `npm start` deixam o `node` órfão se o `npm` levar SIGKILL** (o filho segura a porta e o próximo start falha com `EADDRINUSE`). O planejador agora usa `node <arquivo>` direto quando o script `start` é simples, o que também economiza a RAM do processo `npm`; scripts compostos continuam via `npm start` (limitação documentada).
+- O roteiro e2e derrubava os serviços com `sv exit` (que **não** para o app) e acumulava processos órfãos que seguravam portas e **mascaravam falhas**; o teardown agora faz `sv down` antes e mata processos antigos do sandbox. Além disso, `wait_until test "$(…)"` avaliava a condição uma única vez; a função passou a reavaliar uma expressão a cada tentativa. As 4 suítes foram re-executadas depois dessas correções (2D: 9, 2E: 22, 2F: 29, 2G: 24 verificações, todas verdes).
+- Um push SSH agora dispara deploy via hook; os testes que dirigem deploys pela API removem o hook do repo.
+
+**Decisões:** o estado `crashed` é persistido (`apps.crashed_at`, migração `0002`) e só sai por ação explícita (Start/Restart/novo deploy). Reinício é detectado por troca de PID entre ciclos; com `reconcile.interval = 10 s` o limiar 5/60 s dispara depois de ~50 s de loop.

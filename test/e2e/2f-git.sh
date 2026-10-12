@@ -42,7 +42,7 @@ check "git push saiu com 0" 0 "$RC"
 contains "build visível como remote:" "remote: DroidPaaS: deploy #1" "$OUT"
 contains "estágio install/prepare no terminal" "-----> prepare" "$OUT"
 contains "deploy finalizado" "succeeded" "$OUT"
-wait_until 15 test "$(at web.test.dev /)" = v1
+wait_until 15 '[ "$(at web.test.dev /)" = v1 ]'
 check "v1 pelo hostname" v1 "$(at web.test.dev / | tr -d '\n')"
 
 say "AT-04 via push: build quebrado, v1 segue no ar"
@@ -57,7 +57,7 @@ check "deploy #2 failed" failed "$(api GET /deploys/2 | jget status)"
 rm "$W/web/droidpaas.toml"; gitc add -A; gitc commit -qm "v2 boa"
 OUT=$(gitc push droid main 2>&1)
 contains "v2 boa: sucesso" succeeded "$OUT"
-wait_until 15 test "$(at web.test.dev /)" = v2
+wait_until 15 '[ "$(at web.test.dev /)" = v2 ]'
 check "v2 no ar" v2 "$(at web.test.dev / | tr -d '\n')"
 
 say "push em outro branch não dispara deploy"

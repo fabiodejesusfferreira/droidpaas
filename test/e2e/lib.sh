@@ -21,9 +21,13 @@ check() { # check "descrição" esperado obtido
 contains() { # contains "descrição" trecho texto
   case "$3" in *"$2"*) ok "$1";; *) bad "$1 (não contém [$2]): $(printf %s "$3" | head -c 200)";; esac
 }
-wait_until() { # wait_until segundos comando...
+wait_until() { # wait_until segundos 'expressão' | wait_until segundos comando args...
+  # com uma expressão entre aspas simples ela é reavaliada a cada tentativa (um "$(…)" sem aspas simples seria avaliado só uma vez)
   local t=$1; shift; local end=$(( $(date +%s) + t ))
-  while ! "$@" >/dev/null 2>&1; do [ "$(date +%s)" -ge "$end" ] && return 1; sleep 0.5; done
+  while true; do
+    if [ $# -eq 1 ]; then eval "$1" >/dev/null 2>&1 && return 0; else "$@" >/dev/null 2>&1 && return 0; fi
+    [ "$(date +%s)" -ge "$end" ] && return 1; sleep 0.5
+  done
 }
 api() { # api METODO caminho [corpo-json]
   local m=$1 p=$2; shift 2
@@ -48,6 +52,44 @@ svpid() { sv status "$E2E_HOME/sv/$1" 2>/dev/null | grep -o 'pid [0-9]*' | head 
 at() { curl -s -m 10 -H "Host: $1" "http://$PROXY$2"; }                 # GET via Caddy com Host
 atcode() { curl -s -m 10 -o /dev/null -w '%{http_code}' -H "Host: $1" "http://$PROXY$2"; }
 
+
+# ---- helpers de deploy (usam $W = diretório de trabalho do teste) ----
+gitc() { git -C "$1" -c user.name=e2e -c user.email=e2e@e2e "${@:2}"; }
+newapp() { # newapp nome dir  → cria o app pela API, o repo bare e o remote local
+  api POST /apps "{\"name\":\"$1\"}" >/dev/null
+  git init -q --bare -b main "$E2E_HOME/home/apps/$1/repo.git" 2>/dev/null
+  rm -f "$E2E_HOME/home/apps/$1/repo.git/hooks/post-receive"   # estes testes disparam os deploys pela API; o hook é testado na 2F
+  gitc "$2" init -q -b main; gitc "$2" remote add origin "$E2E_HOME/home/apps/$1/repo.git"
+}
+publish() { gitc "$1" add -A; gitc "$1" commit -qm "$2" --allow-empty; gitc "$1" push -q origin main; }
+deploy() { # deploy app [json] → imprime "id status"
+  local id s; id=$(api POST "/apps/$1/deploys" "${2:-{\}}" | jget id)
+  for _ in $(seq 1 240); do
+    s=$(api GET "/deploys/$id" | jget status)
+    case "$s" in queued|running) sleep 0.5;; *) echo "$id $s"; return;; esac
+  done
+  echo "$id timeout"
+}
+nodeapp() { # nodeapp versão → escreve o app de teste em $W/web
+  mkdir -p "$W/web"
+  cat > "$W/web/server.js" <<JS
+const http = require("http");
+http.createServer((q, r) => {
+  console.log(q.method, q.url);
+  if (q.url === "/health") return r.end("ok");
+  if (q.url.startsWith("/env/")) return r.end(String(process.env[q.url.slice(5)]));
+  r.end("$1\n");
+}).listen(process.env.PORT, process.env.HOST, () => console.log("listening on " + process.env.PORT));
+JS
+  echo '{"name":"web","version":"1.0.0","scripts":{"start":"node server.js"}}' > "$W/web/package.json"
+}
+start_droidd() {
+  cd "$E2E_HOME" || exit 1
+  nohup "$E2E_HOME/bin/droidd" serve --home "$E2E_HOME/home" >> "$E2E_HOME/droidd.log" 2>&1 </dev/null &
+  echo $! > "$E2E_HOME/droidd.pid"
+  wait_until 20 curl -sf "http://$PANEL/healthz"
+}
+
 e2e_build() {
   say "build no aparelho"
   mkdir -p "$E2E_HOME"
@@ -59,6 +101,7 @@ e2e_stop_all() {
   if [ -d "$E2E_HOME/sv" ]; then
     for d in "$E2E_HOME"/sv/*/; do
       [ -d "$d" ] || continue
+      sv -w 8 down "${d%/}" >/dev/null 2>&1   # `exit` sozinho deixa o app rodando (órfão segurando a porta)
       sv -w 5 exit "${d%/}" >/dev/null 2>&1; [ -d "$d/log" ] && sv -w 5 exit "${d%/}/log" >/dev/null 2>&1
     done
   fi
@@ -67,6 +110,10 @@ e2e_stop_all() {
   pkill -f "droidpaas-e2e" 2>/dev/null
   pkill -f "$E2E_HOME/bin/droidd" 2>/dev/null
   pkill -f "caddy run --config $E2E_HOME" 2>/dev/null
+  # processos de apps de execuções antigas (cwd dentro do sandbox) não podem sobreviver: seguram portas e mascaram falhas
+  for p in $(pgrep -u "$(id -u)" -x node 2>/dev/null); do
+    case "$(readlink "/proc/$p/cwd" 2>/dev/null)" in "$E2E_HOME"/*) kill -9 "$p" 2>/dev/null;; esac
+  done
   sleep 1
 }
 
@@ -85,10 +132,8 @@ e2e_setup() {
   # runsvdir próprio (exec -a dá um nome reconhecível para o teardown)
   (exec -a droidpaas-e2e-runsvdir runsvdir "$E2E_HOME/sv" >/dev/null 2>&1 </dev/null &) 
   sleep 1; pgrep -f droidpaas-e2e-runsvdir | head -1 > "$E2E_HOME/runsvdir.pid"
-  cd "$E2E_HOME" || exit 1
-  nohup "$E2E_HOME/bin/droidd" serve --home "$E2E_HOME/home" > "$E2E_HOME/droidd.log" 2>&1 </dev/null &
-  echo $! > "$E2E_HOME/droidd.pid"
-  wait_until 20 curl -sf "http://$PANEL/healthz" || { echo "droidd não subiu"; cat "$E2E_HOME/droidd.log"; exit 1; }
+  : > "$E2E_HOME/droidd.log"
+  start_droidd || { echo "droidd não subiu"; cat "$E2E_HOME/droidd.log"; exit 1; }
   ok "sandbox pronto (token ${TOKEN:0:9}…)"
 }
 

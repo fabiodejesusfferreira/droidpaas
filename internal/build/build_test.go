@@ -90,7 +90,7 @@ func TestNodePlan(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Runtime != "node" || argvs(p) != "install:npm ci | build:npm run build | build:npm prune --omit=dev" || p.Start != "npm start" {
+	if p.Runtime != "node" || argvs(p) != "install:npm ci | build:npm run build | build:npm prune --omit=dev" || p.Start != "node dist/s.js" {
 		t.Fatalf("%s | %q", argvs(p), p.Start)
 	}
 	env := strings.Join(p.Steps[0].Env, " ")
@@ -200,5 +200,24 @@ func TestSaveLoad(t *testing.T) {
 	}
 	if _, err := LoadSaved(t.TempDir()); err == nil {
 		t.Fatal("sem arquivo deve falhar")
+	}
+}
+
+func TestNodeStartSimplification(t *testing.T) {
+	for script, want := range map[string]string{
+		"node server.js":                  "node server.js",
+		"node dist/server.js --port=3000": "node dist/server.js --port=3000",
+		"node ./src/index.mjs":            "node ./src/index.mjs",
+		"nodemon server.js":               "npm start",
+		"node server.js && echo ok":       "npm start",
+		"NODE_ENV=x node server.js":       "npm start",
+		"node -e 'x'":                     "npm start",
+		"node $FILE":                      "npm start",
+		"npm run serve":                   "npm start",
+		"node a.js | tee log":             "npm start",
+	} {
+		if got := nodeStart(script); got != want {
+			t.Errorf("%q → %q, esperado %q", script, got, want)
+		}
 	}
 }

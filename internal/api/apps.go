@@ -2,14 +2,18 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"os/user"
 	"strconv"
 	"strings"
+	"time"
 
 	"droidpaas/internal/apps"
+	"droidpaas/internal/logs"
 	"droidpaas/internal/store"
 )
 
@@ -214,6 +218,39 @@ func (s *Server) registerApps(mux *http.ServeMux) {
 			return
 		}
 		writeJSON(w, 200, map[string]string{"key": r.PathValue("key"), "value": v})
+	}))
+
+	// ---- logs de runtime ----
+	mux.HandleFunc("GET /api/v1/apps/{name}/logs", one(func(w http.ResponseWriter, r *http.Request, a store.App) {
+		tail := 200
+		if n, err := strconv.Atoi(r.URL.Query().Get("tail")); err == nil && n >= 0 {
+			tail = min(n, 5000)
+		}
+		dir := s.Apps.LogDir(a.Name)
+		if r.URL.Query().Get("follow") != "1" {
+			ls, err := logs.Tail(dir, tail)
+			if err != nil {
+				s.internalErr(w, err)
+				return
+			}
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			for _, l := range ls {
+				io.WriteString(w, l.Text+"\n")
+			}
+			return
+		}
+		sse := startSSE(w)
+		if sse == nil {
+			fail(w, 500, "internal", "streaming não suportado")
+			return
+		}
+		defer sse.close()
+		n := 0
+		logs.Follow(r.Context(), dir, tail, 500*time.Millisecond, func(l logs.Line) {
+			n++
+			b, _ := json.Marshal(l)
+			sse.event("line", strconv.Itoa(n), string(b))
+		})
 	}))
 
 	// ---- domínios ----

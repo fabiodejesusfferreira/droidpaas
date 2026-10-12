@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -111,7 +112,7 @@ func MakePlan(app store.App, dir string, o Options) (Plan, error) {
 		case startCmd != "":
 			p.Start = startCmd
 		case pkg.Scripts["start"] != "":
-			p.Start = "npm start"
+			p.Start = nodeStart(pkg.Scripts["start"])
 		case pkg.Main != "":
 			p.Start = "node " + shellQuote(pkg.Main)
 		case exists(dir, "index.js"):
@@ -176,6 +177,19 @@ func MakePlan(app store.App, dir string, o Options) (Plan, error) {
 		return p, fmt.Errorf("runtime desconhecido: %q", rt)
 	}
 	return p, nil
+}
+
+// simpleNodeRe reconhece scripts como "node server.js --flag": sem pipes, &&, variáveis nem aspas.
+var simpleNodeRe = regexp.MustCompile(`^node(\s+[A-Za-z0-9_./@:=-]+)+$`)
+
+// nodeStart evita `npm start` quando o script é só `node …`: o npm vira um processo intermediário (dezenas de MB de RAM) e,
+// se ele levar um SIGKILL, o node filho fica órfão segurando a porta. Scripts compostos continuam via npm.
+func nodeStart(script string) string {
+	script = strings.TrimSpace(script)
+	if simpleNodeRe.MatchString(script) {
+		return script
+	}
+	return "npm start"
 }
 
 type packageJSON struct {

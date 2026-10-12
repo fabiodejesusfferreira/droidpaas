@@ -2,6 +2,8 @@ package runit
 
 import (
 	"context"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -116,4 +118,17 @@ func (f *Fake) Crash(name string) {
 	if s, ok := f.Svcs[name]; ok && s.Up {
 		f.start(s)
 	}
+}
+
+func (f *Fake) List(_ context.Context, prefix string) ([]string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []string
+	for n := range f.Svcs {
+		if strings.HasPrefix(n, prefix) {
+			out = append(out, n)
+		}
+	}
+	sort.Strings(out)
+	return out, nil
 }

@@ -75,7 +75,11 @@ func runServe(args []string) error {
 	svc.Deploying = eng.IsDeploying
 	srv.Deploy = eng
 	loop := reconcile.New(cfg.Reconcile.Interval.D(), log,
+		reconcile.Step{Name: "domains", Run: svc.SyncAutoDomains},
 		reconcile.Step{Name: "git-keys", Run: gs.SyncKeys},
+		reconcile.Step{Name: "apps", Run: (&reconcile.Apps{Store: st, Svc: svc, Runit: rt, Events: ev, Log: log, Deploying: eng.IsDeploying,
+			Tracker: reconcile.NewCrashTracker(cfg.Reconcile.CrashLoopWindow.D(), cfg.Reconcile.CrashLoopThreshold)}).Run},
+		reconcile.Step{Name: "logs", Run: reconcile.Every(time.Hour, eng.PruneLogs)},
 		reconcile.Step{Name: "proxy", Run: proxy.NewController(st, cfg, rt, proxy.NewClient(cfg.Proxy.Admin), ev).Step})
 	svc.Wake, srv.OnChange, eng.Wake = loop.Wake, loop.Wake, loop.Wake
 	go eng.Run(ctx)

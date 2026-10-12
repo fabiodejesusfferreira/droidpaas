@@ -12,14 +12,14 @@ contains "página 404 do DroidPaaS" "nenhum app para este host" "$(at nada.local
 say "app sem release → 503"
 api POST /apps '{"name":"blog"}' >/dev/null
 api POST /apps/blog/domains '{"hostname":"blog.local.dev"}' >/dev/null
-wait_until 15 test "$(atcode blog.local.dev /)" = 503
+wait_until 15 '[ "$(atcode blog.local.dev /)" = 503 ]'
 check "app sem release → 503" 503 "$(atcode blog.local.dev /)"
 contains "página 503 do DroidPaaS" "parado ou ainda não tem" "$(at blog.local.dev /)"
 
 say "Caddy reinicia sozinho (kill -9) e volta com as rotas"
 PID=$(svpid dpt-caddy)
 kill -9 "$PID"
-wait_until 15 test "$(atcode blog.local.dev /)" = 503
+wait_until 15 '[ "$(atcode blog.local.dev /)" = 503 ]'
 check "rota 503 de volta após o restart" 503 "$(atcode blog.local.dev /)"
 NEW=$(svpid dpt-caddy)
 [ "$NEW" != "$PID" ] && ok "pid mudou ($PID → $NEW)" || bad "pid não mudou"

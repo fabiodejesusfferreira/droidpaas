@@ -201,3 +201,17 @@ func (m *Manager) Status(ctx context.Context, name string) (ServiceStatus, error
 	out, _ := m.sv(ctx, "status", m.path(name)) // sv status sai com código ≠ 0 quando está down
 	return ParseStatus(string(out))
 }
+
+func (m *Manager) List(_ context.Context, prefix string) ([]string, error) {
+	ents, err := os.ReadDir(m.Dir)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, e := range ents {
+		if strings.HasPrefix(e.Name(), prefix) && !strings.HasPrefix(e.Name(), ".") {
+			out = append(out, e.Name())
+		}
+	}
+	return out, nil
+}

@@ -372,3 +372,20 @@ func first(vals ...string) string {
 	}
 	return ""
 }
+
+// PruneLogs apaga logs de deploy mais antigos que build.keep_logs_days (TSD §14.1).
+func (e *Engine) PruneLogs(ctx context.Context) error {
+	days := e.Cfg.Build.KeepLogsDays
+	if days <= 0 {
+		return nil
+	}
+	old, err := e.Store.OldDeployLogs(ctx, e.Now().AddDate(0, 0, -days))
+	if err != nil {
+		return err
+	}
+	for id, p := range old {
+		os.Remove(p)
+		e.Store.ClearDeployLogPath(ctx, id)
+	}
+	return nil
+}

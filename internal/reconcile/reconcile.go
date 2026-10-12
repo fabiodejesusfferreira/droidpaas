@@ -59,3 +59,15 @@ func (l *Loop) Run(ctx context.Context) {
 		l.Once(ctx)
 	}
 }
+
+// Every limita um passo caro a no máximo uma execução por intervalo (o primeiro ciclo roda).
+func Every(d time.Duration, f func(context.Context) error) func(context.Context) error {
+	var last time.Time
+	return func(ctx context.Context) error {
+		if !last.IsZero() && time.Since(last) < d {
+			return nil
+		}
+		last = time.Now()
+		return f(ctx)
+	}
+}

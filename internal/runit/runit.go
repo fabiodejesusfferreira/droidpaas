@@ -34,4 +34,6 @@ type ServiceManager interface {
 	Down(ctx context.Context, name string) error
 	Restart(ctx context.Context, name string, wait time.Duration) error
 	Status(ctx context.Context, name string) (ServiceStatus, error)
+	// List devolve os serviços cujo nome começa com prefix (ignora diretórios temporários `.dp-tmp-*`).
+	List(ctx context.Context, prefix string) ([]string, error)
 }
