@@ -3,14 +3,21 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | DroidPaaS (nome provisório) |
-| **Versão do documento** | 0.1 — Rascunho para revisão |
-| **Data** | 2026-10-09 |
+| **Versão do documento** | 0.2 — Pós-PoC (Fase 1 concluída) |
+| **Data** | 2026-10-12 (v0.1: 2026-10-09) |
 | **Escopo deste documento** | Fases 1, 2 e 3 (Prova de Conceito, MVP sem painel, Painel web) |
 | **Dispositivo-alvo de referência** | Samsung Galaxy M22, 4 GB de RAM (aparelho de testes/sandbox) |
 | **Plataforma** | Android + Termux (sem root) |
-| **Status das premissas** | Várias premissas técnicas ainda **não foram validadas no aparelho** (ver §2.4). Elas estão marcadas como `V-xx` e serão confirmadas na Fase 1. |
+| **Status das premissas** | V-01…V-15 avaliadas na Fase 1 (resultados em §2.5 e em `docs/fase-1/poc-report.md`). Pendente: V-05 Parte B (token + wildcard + SSE pelo túnel nomeado), que exige um domínio na Cloudflare. |
 
 > **Aviso de honestidade técnica:** este documento descreve um design, não um sistema já testado. Nomes de pacotes, comportamentos do Termux/Android e números de desempenho são **hipóteses** até a Fase 1 comprová-las. Os limites numéricos (RAM, tempo, temperatura) são **metas propostas**, não medições.
+
+### Histórico de versões
+
+| Versão | Data | Mudanças |
+|---|---|---|
+| 0.1 | 2026-10-09 | Rascunho inicial |
+| 0.2 | 2026-10-12 | Resultados da Fase 1 (§2.5); portas padrão do proxy `18080`/Admin `12019`; `nice` best-effort; `/proc/stat` removido das métricas; boot em arquivo próprio; token do túnel via `TUNNEL_TOKEN`/`--token-file`; Q-02, Q-03 e Q-09 decididas/parciais |
 
 ---
 
@@ -112,7 +119,7 @@ As palavras **DEVE**, **NÃO DEVE**, **DEVERIA** e **PODE** seguem o sentido da 
 | ID | Restrição | Impacto no design |
 |---|---|---|
 | C-01 | Sem root | Sem cgroups/namespaces; controle de recursos só cooperativo |
-| C-02 | Apps não abrem portas < 1024 | Proxy em porta alta (ex.: 8080); o túnel cuida do 80/443 público |
+| C-02 | Apps não abrem portas < 1024 | Proxy em porta alta (ex.: 18080; a 8080 costuma estar ocupada por outros apps, ver §2.5); o túnel cuida do 80/443 público |
 | C-03 | Sem systemd | Supervisão via runit (`termux-services`) |
 | C-04 | Libc é Bionic (não glibc) | Binários nativos de npm/pip podem não existir ou não compilar |
 | C-05 | "Phantom process killer" (Android 12+) e gestão de bateria do fabricante | Exige configuração via adb e isenções; risco de processos mortos |
@@ -150,6 +157,38 @@ Cada item abaixo é uma **hipótese**. O resultado deve ser registrado no relat�
 | V-13 | Binário Go compilado no Termux resolve DNS corretamente | Configurar resolvedor explícito |
 | V-14 | O pacote `golang` do Termux é suficientemente recente (Go ≥ 1.22 para o `ServeMux` com padrões) | Usar roteador de terceiros leve |
 | V-15 | Termux:Boot executa no boot do aparelho sem bloqueio do One UI | Documentar isenções/alternativas |
+
+### 2.5 Resultados da Fase 1 (PoC no Galaxy M22, Android 13)
+
+Evidências e comandos em `docs/fase-1/poc-report.md`. Soak do PoC: **67,8 h**, 0 reinícios, 0 falhas de sonda, temperatura máx. 41,7 °C, RAM disponível mín. 415 MB (boot com apps do usuário).
+
+| ID | Resultado | Observação |
+|---|---|---|
+| V-01 | Confirmada | `termux-battery-status` funciona com tela apagada |
+| V-02 | Confirmada | `runsvdir` detecta serviço novo em ≤ 3 s; `sv`, `kill -9` → reinício em ≤ 1 s; serviços voltam no boot |
+| V-03 | Confirmada | `modernc.org/sqlite` v1.60.1 compila em ~105 s no aparelho; WAL e `VACUUM INTO` OK |
+| V-04 | Confirmada | Caddy sobe como serviço, `POST /load` OK; após reiniciar o Caddy a config se perde (o reconciliador deve reaplicar) |
+| V-05 | **Parcial** | `cloudflared` roda sob runit e o quick tunnel funciona de fora; **token + wildcard + SSE pendentes** (sem domínio). Quick tunnels mudam de URL a cada restart e não suportam SSE |
+| V-06 | Confirmada | `command=` forçado, restrição de app/traversal, `git push` do PC com saída `remote:` ao vivo |
+| V-07 | Confirmada | `git-http-backend` presente e funcional (CGI) |
+| V-08 | Confirmada | Phantom killer desativado via adb; 67,8 h sem mortes |
+| V-09 | **Parcial** | `sv`, `chpst -e`, `svlogd` OK; **`chpst -n`/`nice` sem efeito** no Android 13 |
+| V-10 | **Parcial** | `/proc/<pid>/status` e `/stat` OK; `/proc/stat` e `/proc/loadavg` negados |
+| V-11 | Confirmada (apps puros) | Node e Python em ~36 s e ~30 s; dependência nativa sem wheel (numpy) inviável |
+| V-12 | Confirmada | Socket Unix `0600`, alcançável de dentro do hook sob o `sshd` |
+| V-13 | Confirmada | Binário Go compilado no aparelho resolve DNS e fala HTTPS; o alvo `GOOS=linux` do Makefile **não** foi validado |
+| V-14 | Confirmada | Go 1.27.1 no Termux |
+| V-15 | Confirmada | Termux:Boot executa; coexiste com o `start-services` do usuário |
+
+**Mudanças de design decorrentes:**
+
+1. **Portas configuráveis e padrão fora das comuns:** Caddy `127.0.0.1:18080`, Admin `127.0.0.1:12019` (a 8080/2019 conflitam com outros apps do aparelho). O `droidd init` detecta portas ocupadas.
+2. **`nice` é best-effort** (campo e `chpst -n` mantidos, sem garantia).
+3. **Métricas:** CPU/RSS por app via `/proc/<pid>`; não há CPU global nem load average.
+4. **Boot:** arquivo próprio em `~/.termux/boot/`; nunca sobrescrever o script do usuário.
+5. **Reconciliador reaplica a config do Caddy** quando o `dp-caddy` reinicia (já previsto em §8.5.3, agora comprovado).
+6. **Builds no aparelho** (P-05 validada); Python limitado a pacotes puros ou com wheel.
+7. **Túnel:** token por `TUNNEL_TOKEN` (envdir) ou `--token-file`; **requer domínio** na Cloudflare antes da sub-fase 2I.
 
 ---
 
@@ -241,10 +280,10 @@ Cada item abaixo é uma **hipótese**. O resultado deve ser registrado no relat�
                  ┌───────────▼───────────┐              │
                  │ cloudflared (runit)   │              │
                  └───────────┬───────────┘              │
-                             │ http://127.0.0.1:8080    │
+                             │ http://127.0.0.1:18080    │
                  ┌───────────▼───────────┐              │
                  │ Caddy (runit)         │              │
-                 │ roteia por Host       │◄─────────────┼──── Admin API 127.0.0.1:2019
+                 │ roteia por Host       │◄─────────────┼──── Admin API 127.0.0.1:12019
                  └──┬──────────┬─────────┘              │              ▲
                     │          │ file_server (estáticos)│              │
         127.0.0.1:2xxxx        └────────────────┐       │              │
@@ -275,7 +314,7 @@ Cada item abaixo é uma **hipótese**. O resultado deve ser registrado no relat�
 ### 4.3 Fluxo de uma requisição pública
 
 1. Cliente → DNS da Cloudflare → túnel → `cloudflared` local.
-2. `cloudflared` encaminha para `http://127.0.0.1:8080` (Caddy).
+2. `cloudflared` encaminha para `http://127.0.0.1:18080` (Caddy).
 3. Caddy escolhe a rota pelo header `Host`: `reverse_proxy 127.0.0.1:<porta do app>` ou `file_server` (estático).
 4. Sem rota → página 404 do DroidPaaS; app parado → página 503 do DroidPaaS.
 
@@ -311,7 +350,7 @@ Cada item abaixo é uma **hipótese**. O resultado deve ser registrado no relat�
 | ADR-03 | **runit via `termux-services`** (prefixo `dp-` nos serviços) | Supervisor próprio em Go; `runsvdir` dedicado; PM2 | Já é o init do Termux; sobrevive à queda do `droidd`. *Alternativa registrada:* `runsvdir` dedicado (revisitar se V-02 falhar) |
 | ADR-04 | **Estado desejado no SQLite + reconciliador idempotente** | Comandos imperativos sem estado | Tolerância a falhas, retomada após reboot, correção automática de deriva |
 | ADR-05 | **Caddy configurado por config completa** (`POST /load`) a cada mudança | Patch incremental de rotas | Idempotente e atômico; a config é pequena; o estado desejado vive no banco |
-| ADR-06 | **Túnel com hostname wildcard** apontando para o Caddy (`*.dominio` → `127.0.0.1:8080`) | Um ingress por app em `config.yml` | O `droidd` não precisa tocar no `cloudflared` a cada app; só o Caddy muda. *Sujeito a V-05* |
+| ADR-06 | **Túnel com hostname wildcard** apontando para o Caddy (`*.dominio` → `127.0.0.1:18080`) | Um ingress por app em `config.yml` | O `droidd` não precisa tocar no `cloudflared` a cada app; só o Caddy muda. *Sujeito a V-05* |
 | ADR-07 | **Variáveis via envdir + `chpst -e`** | Arquivo `.env` com `source` | Evita problemas de escaping/injeção em shell |
 | ADR-08 | **htmx + `html/template` + assets embutidos** | SPA (React/Vue) | Sem build de frontend, pouca RAM, funciona offline e em rede lenta |
 | ADR-09 | **SQLite em modo WAL** | Banco externo | Zero servidor, baixo consumo |
@@ -382,8 +421,8 @@ trusted_proxies = ["127.0.0.1"]     # para X-Forwarded-Proto/For
 secure_cookies  = "auto"            # auto | always | never
 
 [proxy]
-listen = "127.0.0.1:8080"
-admin  = "127.0.0.1:2019"
+listen = "127.0.0.1:18080"
+admin  = "127.0.0.1:12019"
 base_domain = ""                    # ex.: "apps.exemplo.com" (defina no init/painel)
 panel_hostname = ""                 # opcional: rotear o painel por hostname
 
@@ -684,7 +723,7 @@ Ordem (primeira correspondência vence, a menos que o runtime esteja fixado):
 | Runtime | install | build | start (padrão) | Observações |
 |---|---|---|---|---|
 | **node** | `npm ci` (ou `pnpm`/`yarn` se houver lockfile correspondente); se não houver lockfile, `npm install` com aviso | `npm run build` se existir script `build`; depois `npm prune --omit=dev` | `npm start` (script) ou `node <main>` | `NODE_ENV=production`; `NODE_OPTIONS=--max-old-space-size=<limite>` durante o build; cache em `cache/npm` |
-| **python** | `python -m venv .venv` + `pip install -r requirements.txt` (ou `pip install .`) | — | `Procfile`/`start` obrigatório (não há convenção segura) | Dependências nativas podem falhar (C-04); erro deve apontar o pacote problemático |
+| **python** | `python -m venv .venv` + `pip install -r requirements.txt` (ou `pip install .`) | — | `Procfile`/`start` obrigatório (não há convenção segura) | Dependências nativas podem falhar (C-04); PoC: `pip install numpy` (sem wheel) não terminou em 10 min; erro deve apontar o pacote problemático |
 | **go** | — | `go build -o app ./...` (alvo `main` detectado) | `./app` | Build no aparelho consome RAM; avisar |
 | **static** | — | `build` opcional | — (Caddy serve `static_dir` ou raiz) | Sem processo, sem porta |
 | **custom** | `install` opcional | `build` opcional | `Procfile` `web:` ou `start` | Comandos definidos pelo usuário (admin confiável) |
@@ -694,7 +733,7 @@ Ordem (primeira correspondência vence, a menos que o runtime esteja fixado):
 #### 8.3.3 Fila e worker
 
 - Tabela `deploys` é a fila persistente. Worker(s) em número `build.max_concurrent` (padrão **1**).
-- Cada build roda em um **grupo de processos próprio** com `nice` configurado; cancelamento envia SIGTERM ao grupo e, após 10 s, SIGKILL.
+- Cada build roda em um **grupo de processos próprio** com `nice` configurado; cancelamento envia SIGTERM ao grupo e, após 10 s, SIGKILL. **No Android 13 o `nice` não tem efeito (V-09 refutada no PoC): é best-effort.** A proteção real é a fila de 1 build, `NODE_OPTIONS=--max-old-space-size` e `GOMAXPROCS`.
 - Timeout total do build: `build.timeout` (padrão 15 min).
 - Saída (stdout+stderr) vai para `logs/deploys/<app>/<id>.log` **e** é transmitida a quem estiver acompanhando (git push, SSE).
 - *Limitação conhecida:* sem cgroups, não há limite rígido de memória; mitigação por flags do runtime e fila de 1.
@@ -740,7 +779,7 @@ command="droid git-shell --key 7",no-port-forwarding,no-X11-forwarding,no-agent-
 
 #### 8.5.1 Bootstrap
 
-O instalador cria `dp-caddy` executando `caddy run --config proxy/bootstrap.json`, com Admin API em `127.0.0.1:2019`, HTTPS automático **desativado** e um servidor em `127.0.0.1:8080` com rota padrão 404 (Apêndice A.5).
+O instalador cria `dp-caddy` executando `caddy run --config proxy/bootstrap.json`, com Admin API em `127.0.0.1:12019`, HTTPS automático **desativado** e um servidor em `127.0.0.1:18080` com rota padrão 404 (Apêndice A.5).
 
 #### 8.5.2 Geração da configuração
 
@@ -756,15 +795,15 @@ Para cada app, a partir de `domains`:
 
 #### 8.5.3 Aplicação
 
-- Serializar a config completa → `POST http://127.0.0.1:2019/load`.
+- Serializar a config completa → `POST http://127.0.0.1:12019/load`.
 - Calcular hash da config; **só aplicar se mudou** (evita recargas inúteis).
 - Em erro do Caddy: registrar evento `proxy.apply_failed`, manter a config anterior e tentar de novo no próximo ciclo (com *backoff*).
 - Reaplicar no boot do `droidd` e sempre que o reconciliador detectar `dp-caddy` reiniciado.
 
 ### 8.6 Túnel (`cloudflared`)
 
-- **Modo token** (Fase 2, Should): o usuário cria o túnel no painel da Cloudflare, cola o token em `droid tunnel set --token ...` (ou nas Configurações, na Fase 3). O `droidd` cria `dp-cloudflared` executando `cloudflared tunnel run --token <token>` (token lido de arquivo/ambiente do serviço, nunca na linha de comando visível em `ps` — **verificar a forma suportada**).
-- **Roteamento (ADR-06):** na Cloudflare, o usuário configura um hostname público (idealmente wildcard `*.<base_domain>`, ver V-05) apontando para `http://127.0.0.1:8080`. O DroidPaaS **não** altera a configuração remota.
+- **Modo token** (Fase 2, Should): o usuário cria o túnel no painel da Cloudflare, cola o token em `droid tunnel set --token ...` (ou nas Configurações, na Fase 3). O `droidd` cria `dp-cloudflared` executando `cloudflared tunnel run --token <token>` (token lido de arquivo/ambiente do serviço, nunca na linha de comando visível em `ps` — **forma confirmada no PoC: variável `TUNNEL_TOKEN` via envdir (`chpst -e`) ou `--token-file` com arquivo `0600`; nunca `--token` na linha de comando**).
+- **Roteamento (ADR-06):** na Cloudflare, o usuário configura um hostname público (idealmente wildcard `*.<base_domain>`, ver V-05) apontando para `http://127.0.0.1:18080`. O DroidPaaS **não** altera a configuração remota.
 - **Domínios fora do wildcard:** o usuário cria manualmente o hostname no túnel; o DroidPaaS só adiciona a rota no Caddy (e exibe uma dica na UI).
 - O token é armazenado cifrado em `settings`.
 - Estado exibido: `connected`/`down`, conforme o serviço runit e logs do `cloudflared`.
@@ -803,7 +842,7 @@ Laço a cada `reconcile.interval`:
 | `termux-battery-status` (JSON) | % bateria, temperatura, carregando, saúde | 3 |
 | `/proc/meminfo` | RAM total/disponível | 3 |
 | `/proc/<pid>/status` | RSS por app (soma da árvore a partir do PID do `runsv`) | 3 |
-| `/proc/<pid>/stat` e `/proc/stat` | CPU por app (amostragem) | 3 |
+| `/proc/<pid>/stat` (`/proc/stat` e `/proc/loadavg` são **negados** no Android 13) | CPU por app (delta de utime+stime sobre o tempo de relógio) | 3 |
 | `statfs` em `$DP_HOME` | Uso de disco | 3 |
 
 - Coleta com intervalo leve (padrão 30 s) e cache em memória; histórico curto (ex.: últimas 2 h em *ring buffer*), **sem** gravar série temporal no SQLite na Fase 3.
@@ -825,13 +864,13 @@ type DeviceProbe interface {
 
 ### 9.1 Primeira instalação (`droidd init`)
 
-1. Verificar pacotes obrigatórios (`git`, `openssh`, `caddy`, `runit`/`termux-services`, `termux-api`, `jq` se usado) e instruir `pkg install` do que faltar (**não** instalar sem confirmação).
+1. Verificar pacotes obrigatórios (`git`, `openssh`, `caddy`, `runit`/`termux-services`, `termux-api`, `jq` se usado) e instruir `pkg install` do que faltar (**não** instalar sem confirmação). Detectar também portas já ocupadas (ex.: 8080/2019 de outro Caddy), processos/serviços `cloudflared` duplicados e scripts de boot existentes: **avisar, nunca sobrescrever**.
 2. Criar a árvore de diretórios (§6.1) com permissões restritas.
 3. Gerar `droidd.toml` padrão e `master.key` (32 bytes aleatórios, `0600`).
 4. Criar banco e aplicar migrações.
 5. Solicitar usuário/senha do admin (senha mínima de 12 caracteres) e gravar o hash.
 6. Gerar o **primeiro token de API** e exibi-lo **uma única vez**.
-7. Criar os serviços runit `droidd` e `dp-caddy`; escrever o script de boot do Termux:Boot (Apêndice A.7).
+7. Criar os serviços runit `droidd` e `dp-caddy`; escrever o script de boot em **arquivo próprio** `~/.termux/boot/droidpaas` (Apêndice A.7), sem alterar scripts de boot existentes do usuário.
 8. Exibir o checklist pós-instalação: desativar o *phantom process killer* (adb), isenção de bateria, configurar o túnel e o domínio base.
 
 ### 9.2 Criação de app
@@ -1189,8 +1228,8 @@ Saída humana por padrão; `--json` para scripts. Códigos de saída: 0 sucesso;
 | Serviço | Endereço padrão | Observação |
 |---|---|---|
 | Painel/API | `127.0.0.1:8090` | Alterar para outra interface é decisão explícita do usuário (aviso na UI) |
-| Caddy | `127.0.0.1:8080` | Entrada apenas do túnel/local |
-| Admin do Caddy | `127.0.0.1:2019` | Nunca exposto |
+| Caddy | `127.0.0.1:18080` | Entrada apenas do túnel/local |
+| Admin do Caddy | `127.0.0.1:12019` | Nunca exposto |
 | Apps | `127.0.0.1:<porta>` | Instruir apps a ouvir em `HOST` |
 | sshd | porta do Termux (padrão 8022) | Preferir Tailscale/LAN; não expor diretamente à internet |
 
@@ -1237,7 +1276,7 @@ Registrar em `events`: login (sucesso/falha), criação/revogação de tokens e 
 
 | Camada | Escolha | Observação |
 |---|---|---|
-| Linguagem | Go (versão mínima a confirmar, V-14) | Build no Termux |
+| Linguagem | Go ≥ 1.22 (confirmado: 1.27.1 no Termux, `GOOS=android`) | Build no Termux |
 | HTTP | `net/http` (stdlib, `ServeMux` com padrões) | Evita dependências |
 | Banco | SQLite via `modernc.org/sqlite` (V-03) | Fallback CGO |
 | Migrações | SQL embutido + tabela `schema_migrations` | Sem ferramenta externa |
@@ -1331,6 +1370,8 @@ Toda dependência do ambiente atrás de interface, com implementação **real** 
 **Se algum item crítico falhar:** registrar a causa e ajustar o design (ex.: V-02 falhando → `runsvdir` dedicado; V-06/V-07 falhando → alternativa de deploy). O relatório lista **decisões alteradas** em relação a este TSD.
 
 **Definição de pronto:** relatório publicado, todas as hipóteses marcadas (confirmada/refutada/ajustada), TSD atualizado para a v0.2.
+
+> **Status (2026-10-12):** Fase 1 concluída com parecer **GO condicional**; ver `docs/fase-1/poc-report.md`.
 
 ### 16.2 Fase 2 — MVP sem painel (≈ 2–3 semanas)
 
@@ -1493,14 +1534,14 @@ Apps de exemplo em `test/fixtures/`: Node (HTTP simples com `/health`), Node com
 | ID | Questão | Quando decidir |
 |---|---|---|
 | Q-01 | Nome final do projeto e do binário (`droid` pode colidir com outros comandos) | Antes da Fase 2 |
-| Q-02 | Dado o resultado de V-02, manter o `SVDIR` do `termux-services` ou usar `runsvdir` dedicado? | Fim da Fase 1 |
-| Q-03 | Como o `cloudflared` deve receber o token sem expô-lo em `ps` (variável de ambiente, arquivo)? | Fase 1 |
+| Q-02 | Dado o resultado de V-02, manter o `SVDIR` do `termux-services` ou usar `runsvdir` dedicado? | **Decidido (v0.2): manter o `SVDIR` do `termux-services`** (detecção ≤ 3 s, boot OK; V-02/V-15) |
+| Q-03 | Como o `cloudflared` deve receber o token sem expô-lo em `ps` (variável de ambiente, arquivo)? | **Decidido (v0.2):** `TUNNEL_TOKEN` via envdir ou `--token-file` `0600`; nunca `--token` |
 | Q-04 | Auto-criar app no primeiro `git push` (estilo Dokku) ou exigir criação prévia? | Fase 2 (padrão proposto: exigir) |
 | Q-05 | Dar suporte a `pnpm`/`yarn`/`bun` na Fase 2 ou só `npm`? | Fase 2 |
 | Q-06 | Convivência com mais de um usuário/admin (hoje: um) | Pós-Fase 3 |
 | Q-07 | Política de versionamento do Node/Python (pacotes do Termux oferecem uma versão por vez) | Fase 2 |
 | Q-08 | Licença do projeto (se for open source) | Antes de publicar |
-| Q-09 | Limite de temperatura aceitável no M22 para uso contínuo | Fim da Fase 1 |
+| Q-09 | Limite de temperatura aceitável no M22 para uso contínuo | **Parcial (v0.2):** pico de 41,7 °C em 68 h; usar 42 °C como alerta; limite de parada fica para a Fase 4 |
 | Q-10 | Estratégia de atualização do próprio `droidd` (manual vs. comando `droid self-update`) | Fase 2/3 |
 
 ---
@@ -1566,12 +1607,12 @@ exec droid hook post-receive --app "__APP__"
 
 ```json
 {
-  "admin": { "listen": "127.0.0.1:2019" },
+  "admin": { "listen": "127.0.0.1:12019" },
   "apps": {
     "http": {
       "servers": {
         "dp": {
-          "listen": ["127.0.0.1:8080"],
+          "listen": ["127.0.0.1:18080"],
           "automatic_https": { "disable": true },
           "routes": [
             {
