@@ -4,7 +4,7 @@
 
 ## Sub-fases
 
-- ☐ 2A Fundação: config, slog, SQLite + migrações, `droidd init/serve` → AT-01
+- ☑ 2A Fundação: config, slog, SQLite + migrações, `droidd init/serve` → AT-01 (ver resultado abaixo)
 - ☐ 2B API base, auth por token, eventos, socket Unix
 - ☐ 2C Runit + modelo de apps, portas, envdir cifrado → AT-08
 - ☐ 2D Proxy Caddy + páginas 404/503 → AT-12
@@ -20,4 +20,26 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 
 ## Decisões e resultado
 
-_A preencher._
+### 2A — Fundação (concluída em 2026-10-12)
+
+**Entregue:** `internal/config` (TOML estrito, defaults do TSD v0.2, `~`/`$PREFIX`), `internal/store` (SQLite WAL, migrações embutidas em `migrations/`, backup `VACUUM INTO` antes de migrar um banco com dados, rollback de migração que falha), `internal/auth` (argon2id, tokens `dp_…` com SHA-256), `internal/api` (`/healthz` e `/internal/ping`), `droidd init` e `droidd serve`.
+
+**Testes (`make test`):** config (defaults, override, campos desconhecidos, validação), auth (senha, token), store (12 tabelas, pragmas, idempotência, backup, rollback, `ON DELETE CASCADE`, interrupção de deploys) e `init` de ponta a ponta (AT-01 automatizado: permissões `0600`/`0700`, token exibido uma vez, segunda execução idempotente, senha curta/divergente rejeitada).
+
+**Medido no M22** (binário compilado no aparelho, `go build` em 55 s com o cache aquecido):
+
+| Meta | Resultado |
+|---|---|
+| RNF-01 RSS do `droidd` ocioso ≤ 40 MB | **9,6 MB** |
+| RNF-02 CPU ocioso < 1 % | **0,00 %** (0 ticks em 60 s) |
+| argon2id ≤ ~500 ms (§13.2) | `TestPassword` (1 hash + 2 verificações) em 0,51 s, ≈ 170 ms por operação |
+| `droidd init` em ambiente limpo (AT-01) | OK: estrutura, `droidd.toml` `0600`, `master.key` 32 bytes `0600`, banco, admin e token |
+| Socket Unix | `0600`; `ping` OK; `SIGTERM` encerra e remove o socket |
+
+**Desvios do plano/TSD:**
+- `go.mod` exige **Go 1.26** (`modernc.org/sqlite` v1.60.1); o Go do PC baixa o toolchain sozinho e o do M22 (1.27.1) atende.
+- O pacote `migrations/` tem um `migrations.go` com `go:embed` (um `embed` não alcança diretórios acima do pacote).
+- **A criação dos serviços runit `droidd` e `dp-caddy` pelo `init` ficou para a 2C**, que traz o `ServiceManager` real. O `init` avisa disso no checklist.
+- O `init` só escreve `~/.termux/boot/droidpaas` quando `$PREFIX` existe e o arquivo não existe; nunca altera outros scripts de boot.
+- Portas padrão do proxy já seguem o TSD v0.2 (`18080`/`12019`).
+
