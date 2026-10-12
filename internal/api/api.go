@@ -16,6 +16,7 @@ import (
 	"droidpaas/internal/auth"
 	"droidpaas/internal/config"
 	"droidpaas/internal/crypt"
+	"droidpaas/internal/deploy"
 	"droidpaas/internal/events"
 	"droidpaas/internal/store"
 )
@@ -28,6 +29,7 @@ type Server struct {
 	Version string
 	Log     *slog.Logger
 	Apps    *apps.Service
+	Deploy  *deploy.Engine
 	// OnChange acorda o reconciliador depois de mudar o estado desejado.
 	OnChange func()
 }
@@ -51,6 +53,7 @@ func (s *Server) Public() http.Handler {
 	s.registerSettings(mux)
 	s.registerEvents(mux)
 	s.registerApps(mux)
+	s.registerDeploys(mux)
 	mux.HandleFunc("GET /api/v1/me", s.full(s.handleMe))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, 404, "not_found", "rota inexistente")

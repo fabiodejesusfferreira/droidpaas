@@ -17,11 +17,13 @@ import (
 	"droidpaas/internal/apps"
 	"droidpaas/internal/config"
 	"droidpaas/internal/crypt"
+	"droidpaas/internal/deploy"
 	"droidpaas/internal/events"
 	"droidpaas/internal/proxy"
 	"droidpaas/internal/reconcile"
 	"droidpaas/internal/runit"
 	"droidpaas/internal/store"
+	"droidpaas/internal/system"
 )
 
 func runServe(args []string) error {
@@ -67,9 +69,13 @@ func runServe(args []string) error {
 	svc := &apps.Service{Store: st, Runit: runit.New(cfg.Runit.ServiceDir), Box: box, Events: ev, Cfg: cfg}
 	srv := &api.Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: version, Log: log, Apps: svc}
 	rt := runit.New(cfg.Runit.ServiceDir)
+	eng := deploy.New(&deploy.Engine{Store: st, Apps: svc, Runit: rt, Git: system.GitCLI{}, Runner: system.ExecRunner{}, Cfg: cfg, Events: ev, Log: log})
+	svc.Deploying = eng.IsDeploying
+	srv.Deploy = eng
 	loop := reconcile.New(cfg.Reconcile.Interval.D(), log,
 		reconcile.Step{Name: "proxy", Run: proxy.NewController(st, cfg, rt, proxy.NewClient(cfg.Proxy.Admin), ev).Step})
-	svc.Wake, srv.OnChange = loop.Wake, loop.Wake
+	svc.Wake, srv.OnChange, eng.Wake = loop.Wake, loop.Wake, loop.Wake
+	go eng.Run(ctx)
 	go loop.Run(ctx)
 
 	pub := &http.Server{Addr: cfg.HTTP.PanelAddr, Handler: srv.Public(), ReadHeaderTimeout: 10 * time.Second}

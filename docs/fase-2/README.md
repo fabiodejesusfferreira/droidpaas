@@ -8,7 +8,7 @@
 - ☑ 2B API base, auth por token, eventos, socket Unix
 - ☑ 2C Runit + modelo de apps, portas, envdir cifrado → AT-08 (a parte de apps/envdir validada com `sv`/`chpst` reais)
 - ☑ 2D Proxy Caddy + páginas 404/503 → AT-12 (rota estática testada na 2E, quando houver release)
-- ☐ 2E Build, deploy, rollback (node + static) → AT-04, AT-05, AT-06
+- ☑ 2E Build, deploy, rollback (todos os runtimes) → AT-04, AT-05, AT-06
 - ☐ 2F Git SSH + hook → AT-03
 - ☐ 2G Reconciliador, crash loop, logs de runtime → AT-09, AT-10
 - ☐ 2H CLI `droid` + runtimes python/go/custom → AT-07
@@ -71,3 +71,18 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 **Decisão:** o `dp-caddy` sobe com `caddy run --config proxy/caddy.json`, arquivo que o `droidd` regrava a cada mudança. Assim o Caddy volta com as rotas certas depois de um restart ou de um reboot **mesmo sem o droidd** (RNF-08). Também usa `XDG_CONFIG_HOME`/`XDG_DATA_HOME` sob `$DP_HOME/proxy` e `GOMEMLIMIT=128MiB` (no PoC o Caddy gravava em `~/caddy` e `~/.config/caddy`).
 
 **Teste no aparelho** (`test/e2e/2d-proxy.sh`, sandbox com `runsvdir` próprio, prefixo `dpt-` e portas 18090/28080/22019; 9 verificações): host desconhecido → 404; app sem release → 503; `kill -9` no Caddy → ele volta servindo a mesma rota; `kill -9` no `droidd` → proxy segue servindo 503/404.
+
+### 2E — Build, deploy e rollback (concluída em 2026-10-12)
+
+`internal/system` (`ExecRunner` com grupo de processos + SIGTERM→SIGKILL, `GitCLI` com extração de tar segura contra `..`, caminhos absolutos e symlinks, relógios), `internal/build` (detecção na ordem do §8.3.1, `droidpaas.toml` estrito, Procfile, planos de node/python/go/static/custom, plano salvo na release), `internal/deploy` (fila persistente com serialização por app, estágios `fetch→detect→install→build→prepare→switch→start→health→finalize`, health TCP/HTTP, rollback automático, rollback manual, retenção, cancelamento, recuperação pós-queda, log ao vivo com replay e retomada por número de linha) e a API `/apps/{name}/deploys|rollback|releases`, `/deploys/{id}`, `/deploys/{id}/logs` (texto ou SSE com `Last-Event-ID` e heartbeat) e `/deploys/{id}/cancel`.
+
+**Teste no aparelho** (`test/e2e/2e-deploy.sh`, 22 verificações, sandbox com runit e Caddy reais): deploy de um app Node em **11 s** (RNF-05 ≤ 90 s); v2 servida pelo Caddy; build quebrado → `failed` e a v2 segue no ar (AT-04/RNF-09); app que sai ao subir → rollback automático e v2 de volta (AT-05); rollback manual para a v1 (AT-06); variável + "salvar e reiniciar", segredo mascarado na API e visível ao app (AT-07); `kill -9` → novo PID em < 1 s (AT-08); site estático servido pelo Caddy sem processo (AT-12).
+
+**Desvios e decisões:**
+- Migração `0004` adiciona `git_sha`, `git_ref` e `rebuild` a `deploys`: o DDL do TSD não tinha onde guardar o que a fila deve construir.
+- **Q-05 decidida: só `npm`** (com `npm ci` se houver `package-lock.json`, senão `npm install` com aviso). `pnpm`/`yarn`/`bun` ficam fora da Fase 2.
+- O build instala com `NODE_ENV=development` e `--max-old-space-size=512`, depois roda `npm prune --omit=dev`; o app roda com `NODE_ENV=production` (PoC 1F).
+- O build enxerga as variáveis de ambiente do app (necessário para `NEXT_PUBLIC_*` etc.); `PORT`/`HOST`/`DP_*` só existem em runtime.
+- Deploy num app **parado** ativa a release mas não inicia o processo. Deploy num app estático para o processo da release anterior, se havia.
+- O `static_dir` efetivo (app > `droidpaas.toml`) fica no plano salvo da release e o proxy o lê de lá.
+- Cancelar só é possível antes da troca de release (`409 too_late` depois).

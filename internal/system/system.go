@@ -41,7 +41,10 @@ type CommandRunner interface {
 }
 
 type GitRunner interface {
-	// Archive extrai o conteúdo de sha do repo bare em dest (git archive | tar -x).
+	// Archive extrai o conteúdo de sha do repo bare em dest (git archive | tar -x), sem .git.
 	Archive(ctx context.Context, repo, sha, dest string) error
+	// RevParse resolve um ref (branch, tag ou sha) para o sha do commit.
 	RevParse(ctx context.Context, repo, ref string) (string, error)
+	// Subject devolve a primeira linha da mensagem do commit.
+	Subject(ctx context.Context, repo, sha string) (string, error)
 }

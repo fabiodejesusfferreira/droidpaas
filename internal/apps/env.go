@@ -184,3 +184,20 @@ func (s *Service) MaterializeEnv(ctx context.Context, a store.App, release, runt
 	}
 	return nil
 }
+
+// UserEnv devolve as variáveis do usuário em claro (usadas no build e no envdir). Nunca vai para logs/eventos.
+func (s *Service) UserEnv(ctx context.Context, a store.App) (map[string]string, error) {
+	vars, err := s.Store.Env(ctx, a.ID)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[string]string, len(vars))
+	for _, v := range vars {
+		plain, err := s.Box.Open(v.ValueEnc)
+		if err != nil {
+			return nil, err
+		}
+		m[v.Key] = string(plain)
+	}
+	return m, nil
+}

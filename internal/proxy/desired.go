@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"droidpaas/internal/build"
 	"droidpaas/internal/config"
 	"droidpaas/internal/runit"
 	"droidpaas/internal/store"
@@ -36,7 +37,12 @@ func BuildInput(ctx context.Context, st *store.Store, cfg config.Config, panelHo
 			switch {
 			case rel.Runtime == "static":
 				r.Kind = Static
-				r.Root = filepath.Join(cfg.Dir("apps", a.Name, "current"), derefStr(a.StaticDir))
+				// o static_dir efetivo (app > droidpaas.toml) fica no plano salvo da release
+				dir := derefStr(a.StaticDir)
+				if saved, err := build.LoadSaved(rel.Path); err == nil && dir == "" {
+					dir = saved.StaticDir
+				}
+				r.Root = filepath.Join(cfg.Dir("apps", a.Name, "current"), dir)
 			case a.Port != nil:
 				r.Kind, r.Port = Process, *a.Port
 			}

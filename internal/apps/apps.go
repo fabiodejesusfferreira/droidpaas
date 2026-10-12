@@ -74,6 +74,9 @@ func (s *Service) wake() {
 	}
 }
 
+// PrefixDir é o $PREFIX usado nos scripts gerados.
+func (s *Service) PrefixDir() string { return s.prefix() }
+
 func (s *Service) prefix() string {
 	if s.Prefix != "" {
 		return s.Prefix

@@ -16,9 +16,11 @@ import (
 	"droidpaas/internal/auth"
 	"droidpaas/internal/config"
 	"droidpaas/internal/crypt"
+	"droidpaas/internal/deploy"
 	"droidpaas/internal/events"
 	"droidpaas/internal/runit"
 	"droidpaas/internal/store"
+	"droidpaas/internal/system"
 )
 
 type env struct {
@@ -42,7 +44,13 @@ func newEnv(t *testing.T) *env {
 	ev := &events.Log{DB: st.DB, Log: log}
 	rt := runit.NewFake()
 	svc := &apps.Service{Store: st, Runit: rt, Box: box, Events: ev, Cfg: cfg, Prefix: "/p", PortFree: func(int) bool { return true }}
-	srv := &Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: "test", Log: log, Apps: svc}
+	eng := deploy.New(&deploy.Engine{Store: st, Apps: svc, Runit: rt, Git: system.GitCLI{}, Runner: system.ExecRunner{}, Cfg: cfg, Events: ev, Log: log,
+		Health: func(context.Context, int, string) error { return nil }})
+	svc.Deploying = eng.IsDeploying
+	ectx, ecancel := context.WithCancel(context.Background())
+	go eng.Run(ectx)
+	t.Cleanup(ecancel)
+	srv := &Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: "test", Log: log, Apps: svc, Deploy: eng}
 	uid, err := st.CreateUser(ctx, "admin", "hash")
 	if err != nil {
 		t.Fatal(err)

@@ -57,8 +57,8 @@ func TestMigrateBacksUpBeforeNewMigration(t *testing.T) {
 	}
 	fsys := fstest.MapFS{
 		"0001_init.sql": {Data: []byte(`select 1;`)}, "0002_scope_crash.sql": {Data: []byte(`select 1;`)}, // já aplicadas: ignoradas
-		"0003_y.sql": {Data: []byte(`select 1;`)},
-		"0004_x.sql": {Data: []byte(`create table extra(id integer);`)},
+		"0003_release_runtime.sql": {Data: []byte(`select 1;`)}, "0004_deploy_queue.sql": {Data: []byte(`select 1;`)},
+		"0005_x.sql": {Data: []byte(`create table extra(id integer);`)},
 	}
 	if err := migrate(ctx, s.DB, fsys, p); err != nil {
 		t.Fatal(err)
@@ -70,14 +70,14 @@ func TestMigrateBacksUpBeforeNewMigration(t *testing.T) {
 	}
 	var n int
 	s.DB.QueryRowContext(ctx, `select count(*) from schema_migrations`).Scan(&n)
-	if n != 4 {
+	if n != 5 {
 		t.Fatalf("migrações aplicadas = %d", n)
 	}
 }
 
 func TestFailedMigrationRollsBack(t *testing.T) {
 	s, p := open(t)
-	fsys := fstest.MapFS{"0004_bad.sql": {Data: []byte(`create table ok(id integer); select * from nao_existe;`)}}
+	fsys := fstest.MapFS{"0005_bad.sql": {Data: []byte(`create table ok(id integer); select * from nao_existe;`)}}
 	if err := migrate(context.Background(), s.DB, fsys, p); err == nil {
 		t.Fatal("esperava erro")
 	}
