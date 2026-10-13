@@ -138,3 +138,13 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 | Documentação mínima publicada; TSD atualizado | ✅ `docs/operacao.md`, TSD v0.3 |
 
 **Para fechar o gate** é preciso instalar de verdade no M22 (`sh scripts/install.sh`), rodar o soak por 72 h (`nohup bash scripts/soak/soak.sh &`, depois `python3 scripts/soak/summary.py`), fazer um reboot (AT-11) e, com um domínio, validar o túnel. Isso altera o `SVDIR` e o boot reais do aparelho, por isso depende de autorização explícita.
+
+### Gate da Fase 2 — instalação real (2026-10-13)
+
+**AT-01 na instalação real ✅** (`scripts/install.sh` no M22): estrutura criada, `master.key`/banco/`droidd.toml`/config do `droid` em `0600`, `etc/secrets` em `0700`, serviço runit `droidd` criado e `dp-caddy` criado por ele; RSS medido: `droidd` 13 MB, Caddy 35 MB (RNF-01 ≤ 40 MB ✅). Os apps do usuário (`caddy file-server :8080`, `painel.js`) seguiram no ar. Bug achado e corrigido nesta etapa: o `init` não expandia `$PREFIX` e por isso não criava o serviço (commit `2b052b7`).
+
+**AT-11 reboot ✅** com um app `running`, um `stopped` e um `crashed` (crash loop real, detectado em 5 `kill -9`): depois do reboot o `droidd` e o `dp-caddy` voltaram sozinhos ~3 s depois do Termux:Boot (`boot.log` 01:32:32Z; `sv status` mostra 131 s às 01:34:46Z) — RNF-07 ≤ 60 s ✅; `a11run` voltou `running` (respondendo na porta 20000), `a11stop` continuou `stopped` e `a11crash` continuou `crashed` (estado persistido). Os três apps de teste foram removidos.
+
+**Soak de 72 h ⏳ em andamento:** iniciado em `2026-10-13T01:35Z` (22:35 em Brasília de 12/10), término previsto `2026-10-16T01:35Z`, com `scripts/soak/soak.sh` (apps `soaknode`, `soakpy`, `soakgo`, `soaksite`; deploy a cada 4 h, restart a cada 3 h, `kill -9` a cada 8 h). Saídas em `~/soak/` no aparelho; resumo com `python3 ~/droidpaas-src/scripts/soak/summary.py`. Aparelho na tomada (91 %, 37 °C no início).
+
+**Túnel público com domínio (RF-16) ⏳:** aguardando um domínio na Cloudflare.
