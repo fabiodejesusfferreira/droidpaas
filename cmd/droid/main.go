@@ -3,25 +3,45 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 )
 
 const version = "0.1.0-dev"
 
+const usage = `uso: droid [--json] <comando> [args]
+
+  login --url URL --token TOKEN    salva as credenciais
+  apps [create NOME | rm NOME --yes]
+  start|stop|restart APP
+  deploy APP [--ref R] [--rebuild] [--no-follow]
+  rollback APP [--release N]
+  logs APP [-f] [-n 200]
+  deploys APP | deploy-logs ID [-f]
+  env APP [list | set K=V... [--secret] [--restart] | unset K... [--restart] | reveal K]
+  domains APP [list | add HOST | rm HOST]
+  keys [ls | add ARQUIVO.pub [--name N] | rm ID]
+  tokens [ls | create NOME [--scope full|git] | rm ID]
+  tunnel set --token T | --clear
+  status
+  backup [--out ARQUIVO] [--with-key]
+  version
+`
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "uso: droid <comando> [flags]")
-		os.Exit(2)
+	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
+}
+
+func run(args []string, in io.Reader, out, errw io.Writer) int {
+	if len(args) == 0 {
+		fmt.Fprint(errw, usage)
+		return 2
 	}
-	switch os.Args[1] {
+	switch args[0] { // subcomandos internos: não passam pela CLI de usuário
 	case "git-shell":
-		os.Exit(runGitShell(os.Args[2:]))
+		return runGitShell(args[1:])
 	case "hook":
-		os.Exit(runHook(os.Args[2:], os.Stdin, os.Stderr))
-	case "version":
-		fmt.Println(version)
-	default:
-		fmt.Fprintf(os.Stderr, "droid: comando desconhecido %q\n", os.Args[1])
-		os.Exit(2)
+		return runHook(args[1:], in, errw)
 	}
+	return newCLI(in, out, errw).dispatch(args)
 }

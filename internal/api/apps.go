@@ -19,9 +19,11 @@ import (
 
 type appView struct {
 	store.App
-	State   string   `json:"state"`
-	Domains []string `json:"domains"`
-	Git     gitURLs  `json:"git"`
+	State string `json:"state"`
+	// ResolvedRuntime é o runtime detectado na release ativa (o campo runtime pode ser "auto").
+	ResolvedRuntime string   `json:"resolved_runtime"`
+	Domains         []string `json:"domains"`
+	Git             gitURLs  `json:"git"`
 }
 
 type gitURLs struct {
@@ -36,6 +38,11 @@ func (s *Server) view(r *http.Request, a store.App) (appView, error) {
 		return appView{}, err
 	}
 	v := appView{App: a, State: s.Apps.State(ctx, a), Domains: []string{}}
+	if a.CurrentReleaseID != nil {
+		if rel, err := s.Store.Release(ctx, *a.CurrentReleaseID); err == nil {
+			v.ResolvedRuntime = rel.Runtime
+		}
+	}
 	for _, d := range ds {
 		v.Domains = append(v.Domains, d.Hostname)
 	}

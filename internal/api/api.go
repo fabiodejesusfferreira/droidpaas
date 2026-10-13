@@ -19,6 +19,7 @@ import (
 	"droidpaas/internal/deploy"
 	"droidpaas/internal/events"
 	"droidpaas/internal/gitsrv"
+	"droidpaas/internal/runit"
 	"droidpaas/internal/store"
 )
 
@@ -32,6 +33,8 @@ type Server struct {
 	Apps    *apps.Service
 	Deploy  *deploy.Engine
 	Git     *gitsrv.Service
+	Runit   runit.ServiceManager
+	Started time.Time
 	// OnChange acorda o reconciliador depois de mudar o estado desejado.
 	OnChange func()
 }
@@ -58,6 +61,7 @@ func (s *Server) Public() http.Handler {
 	s.registerDeploys(mux)
 	s.registerSSHKeys(mux)
 	mux.HandleFunc("GET /api/v1/me", s.full(s.handleMe))
+	mux.HandleFunc("GET /api/v1/system", s.full(s.handleSystem))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, 404, "not_found", "rota inexistente")
 	})

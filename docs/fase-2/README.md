@@ -11,7 +11,7 @@
 - ☑ 2E Build, deploy, rollback (todos os runtimes) → AT-04, AT-05, AT-06
 - ☑ 2F Git SSH + hook → AT-03
 - ☑ 2G Reconciliador, crash loop, logs de runtime → AT-09, AT-10
-- ☐ 2H CLI `droid` + runtimes python/go/custom → AT-07
+- ☑ 2H CLI `droid` + runtimes python/go/custom → AT-07
 - ☐ 2I Túnel, Git HTTP, backup, docs, soak 72 h → AT-11
 
 ## Gate
@@ -107,3 +107,11 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 - Um push SSH agora dispara deploy via hook; os testes que dirigem deploys pela API removem o hook do repo.
 
 **Decisões:** o estado `crashed` é persistido (`apps.crashed_at`, migração `0002`) e só sai por ação explícita (Start/Restart/novo deploy). Reinício é detectado por troca de PID entre ciclos; com `reconcile.interval = 10 s` o limiar 5/60 s dispara depois de ~50 s de loop.
+
+### 2H — CLI `droid` e runtimes (concluída em 2026-10-12)
+
+`internal/client` (credenciais em `~/.config/droid/config.toml` 0600, `DROID_URL`/`DROID_TOKEN`/`DROID_CONFIG`, cliente REST com `APIError` e consumo de SSE) e `cmd/droid` com todos os comandos do §11: `login`, `apps [create|rm]`, `start|stop|restart`, `deploy [--ref --rebuild --no-follow]` (acompanha o log ao vivo e sai 0/1 pelo status), `rollback [--release]`, `logs [-f -n]`, `deploys`, `deploy-logs [-f]`, `env [list|set|unset|reveal]`, `domains`, `keys`, `tokens`, `tunnel set`, `status`, `version`, mais `--json` em qualquer posição. Flags podem vir antes ou depois dos argumentos. Códigos de saída: 0 sucesso, 1 erro, 2 uso incorreto, 3 autenticação. Novo `GET /api/v1/system` (versão, uptime, serviços base e contagem de apps por estado) e `resolved_runtime` no JSON de apps. `internal/api/apitest` sobe um droidd em memória para os testes da CLI.
+
+**Testes:** 8 testes de integração da CLI (em processo, contra o servidor real em memória) + `test/e2e/2h-cli.sh` no aparelho (**44 verificações**): deploy de node com `npm run build` (11 s), python com venv+pip (19 s), go com `go build` (46 s), site estático e custom com Procfile, erro claro quando não há runtime detectável, e o uso diário só pela CLI (`login`, `deploy`, `env set --secret --restart`, `reveal`, `logs`, `deploy --rebuild`, `rollback`, `stop`/`start`, `apps rm`).
+
+**Correções feitas aqui:** o estado de um site estático era `stopped` (o serviço runit fica parado de propósito); agora é `running` quando a release está ativa e o app deve rodar. `droid status` lista os serviços pelo nome real (prefixo configurável).

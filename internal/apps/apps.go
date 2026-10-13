@@ -211,6 +211,15 @@ func (s *Service) State(ctx context.Context, a store.App) string {
 	if s.Deploying != nil && s.Deploying(a.ID) {
 		return "deploying"
 	}
+	// site estático não tem processo: está "no ar" quando a release está ativa e o app deve rodar
+	if a.CurrentReleaseID != nil {
+		if rel, err := s.Store.Release(ctx, *a.CurrentReleaseID); err == nil && rel.Runtime == "static" {
+			if a.DesiredState == "running" {
+				return "running"
+			}
+			return "stopped"
+		}
+	}
 	st, err := s.Runit.Status(ctx, s.ServiceName(a.Name))
 	if err != nil {
 		if errors.Is(err, runit.ErrNoService) && a.CurrentReleaseID != nil {

@@ -365,3 +365,20 @@ func TestDomains(t *testing.T) {
 		t.Fatalf("desativar domínio base: %+v", ds)
 	}
 }
+
+func TestStaticAppStateWithoutProcess(t *testing.T) {
+	f := newSvc(t)
+	a := f.mustCreate(t, "site")
+	r := store.Release{AppID: a.ID, GitSHA: "a", GitRef: "main", Status: "ready", Path: "/x", Runtime: "static"}
+	f.svc.Store.InsertRelease(f.ctx, &r)
+	f.svc.Store.SetCurrentRelease(f.ctx, a.ID, &r.ID)
+	a, _ = f.svc.Get(f.ctx, "site")
+	if got := f.svc.State(f.ctx, a); got != "running" {
+		t.Fatalf("site estático ativo deve estar running (serviço runit down), está %s", got)
+	}
+	f.svc.Store.SetDesiredState(f.ctx, a.ID, "stopped")
+	a, _ = f.svc.Get(f.ctx, "site")
+	if got := f.svc.State(f.ctx, a); got != "stopped" {
+		t.Fatalf("%s", got)
+	}
+}

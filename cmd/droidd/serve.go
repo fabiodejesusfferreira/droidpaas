@@ -69,7 +69,7 @@ func runServe(args []string) error {
 	ev := &events.Log{DB: st.DB, Log: log}
 	gs := &gitsrv.Service{Store: st, Cfg: cfg}
 	svc := &apps.Service{Git: gs, Store: st, Runit: runit.New(cfg.Runit.ServiceDir), Box: box, Events: ev, Cfg: cfg}
-	srv := &api.Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: version, Log: log, Apps: svc, Git: gs}
+	srv := &api.Server{Store: st, Events: ev, Box: box, Cfg: cfg, Version: version, Log: log, Apps: svc, Git: gs, Runit: runit.New(cfg.Runit.ServiceDir), Started: time.Now()}
 	rt := runit.New(cfg.Runit.ServiceDir)
 	eng := deploy.New(&deploy.Engine{Store: st, Apps: svc, Runit: rt, Git: system.GitCLI{}, Runner: system.ExecRunner{}, Cfg: cfg, Events: ev, Log: log})
 	svc.Deploying = eng.IsDeploying
