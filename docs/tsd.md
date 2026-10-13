@@ -3,8 +3,8 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | DroidPaaS (nome provisório) |
-| **Versão do documento** | 0.2 — Pós-PoC (Fase 1 concluída) |
-| **Data** | 2026-10-12 (v0.1: 2026-10-09) |
+| **Versão do documento** | 0.3 — Fase 2 implementada (gate no aparelho pendente) |
+| **Data** | 2026-10-13 (v0.1: 2026-10-09) |
 | **Escopo deste documento** | Fases 1, 2 e 3 (Prova de Conceito, MVP sem painel, Painel web) |
 | **Dispositivo-alvo de referência** | Samsung Galaxy M22, 4 GB de RAM (aparelho de testes/sandbox) |
 | **Plataforma** | Android + Termux (sem root) |
@@ -17,6 +17,7 @@
 | Versão | Data | Mudanças |
 |---|---|---|
 | 0.1 | 2026-10-09 | Rascunho inicial |
+| 0.3 | 2026-10-13 | Fase 2 implementada (§16.2.1): `chpst` não executa scripts com shebang (A.1 usa `sh start.sh`); codificação do envdir; migrações 0002–0004; endpoints `/releases`, `/backup`, `/system`, Git HTTP; `git-shell`/`hook` com `--home`/`--socket`; Q-01, Q-04, Q-05, Q-07, Q-08, Q-10 decididas |
 | 0.2 | 2026-10-12 | Resultados da Fase 1 (§2.5); portas padrão do proxy `18080`/Admin `12019`; `nice` best-effort; `/proc/stat` removido das métricas; boot em arquivo próprio; token do túnel via `TUNNEL_TOKEN`/`--token-file`; Q-02, Q-03 e Q-09 decididas/parciais |
 
 ---
@@ -483,6 +484,8 @@ Convenções: datas em **epoch milissegundos** (`INTEGER`); IDs `INTEGER PRIMARY
 
 ### 7.1 DDL (versão inicial)
 
+> Evolução por migrações (v0.3): `0002` adiciona `api_tokens.scope` e `apps.crashed_at` (o estado `crashed` precisa sobreviver a um restart); `0003` adiciona `releases.runtime`; `0004` adiciona `deploys.git_sha/git_ref/rebuild` (a fila precisa saber o que construir). O DDL abaixo é o da `0001`.
+
 ```sql
 CREATE TABLE schema_migrations (
   version     INTEGER PRIMARY KEY,
@@ -684,7 +687,7 @@ type ServiceStatus struct {
 
 #### 8.2.2 Script `run` gerado
 
-Ver Apêndice A.1. Pontos obrigatórios: `exec 2>&1`; `cd` no `current`; `PATH` explícito; `exec chpst -e <envdir> -n <nice> <start.sh>` (o processo final **substitui** o shell para que sinais cheguem ao app).
+Ver Apêndice A.1. Pontos obrigatórios: `exec 2>&1`; `cd` no `current`; `PATH` explícito; `exec chpst -e <envdir> -n <nice> sh <start.sh>` — o `chpst` do Termux **não executa scripts com shebang** ("file does not exist", achado da Fase 2), por isso o `start.sh` roda via `sh`; dentro dele o comando do app usa `exec`, de modo que o processo final substitui o shell e os sinais chegam ao app.
 
 #### 8.2.3 Parada e reinício
 
@@ -772,7 +775,7 @@ command="droid git-shell --key 7",no-port-forwarding,no-X11-forwarding,no-agent-
 
 1. Lê linhas `<old> <new> <ref>` do stdin.
 2. Considera apenas `refs/heads/<branch configurado>`; outras refs são ignoradas com mensagem.
-3. Executa `droid hook post-receive --app <nome> --sha <new> --ref <ref>`, que conecta ao socket Unix, solicita o deploy e **transmite a saída do build** para o stderr do hook (aparece no terminal como `remote: ...`).
+3. Executa `droid hook post-receive --app <nome> --socket <caminho>` (as linhas `old new ref` seguem pelo stdin; o filtro de branch é feito pelo `droidd`), que conecta ao socket Unix, solicita o deploy e **transmite a saída do build** para o stderr do hook (aparece no terminal como `remote: ...`).
 4. O código de saída do hook reflete o resultado do deploy; falha de deploy **não** desfaz o push (o commit já foi recebido), mas o terminal mostra o erro e o app permanece na release anterior.
 
 ### 8.5 Proxy (Caddy)
@@ -980,7 +983,10 @@ git push droid main
 | GET/POST/DELETE | `/tokens`, `/tokens/{id}` | Tokens de API | 2 |
 | GET/PUT | `/settings` | Configurações globais | 2 |
 | PUT | `/settings/tunnel` | Definir/limpar token do túnel | 2 |
-| GET | `/system` | Versões, uptime, RAM, disco, bateria/temperatura | 3 |
+| GET | `/system` | Versões, uptime, serviços base, apps por estado e túnel (RAM/disco/bateria entram na Fase 3) | 2 |
+| GET | `/apps/{name}/releases` | Releases do app e a atual | 2 |
+| GET | `/backup[?key=1]` | Cópia consistente do SQLite (`.tar.gz` com a `master.key` se `key=1`; auditado) | 2 |
+| * | `/git/{app}.git/*` | Git smart HTTP (Basic: senha = token `git`/`full`; `git http-backend` via CGI) | 2 |
 | GET | `/events?limit=` | Eventos | 2 |
 | GET | `/healthz` | Liveness (sem autenticação, sem dados sensíveis) | 2 |
 
@@ -1375,6 +1381,8 @@ Toda dependência do ambiente atrás de interface, com implementação **real** 
 
 ### 16.2 Fase 2 — MVP sem painel (≈ 2–3 semanas)
 
+> **Status (2026-10-13):** sub-fases 2A–2I implementadas e verificadas no M22 por 154 checagens automatizadas (`test/e2e/`); falta o gate em instalação real: soak de 72 h, AT-11 (reboot) e a medição de RNF-01/02 em uso. Ver `docs/fase-2/README.md`.
+
 **Entregáveis**
 
 | # | Entrega | Requisitos |
@@ -1533,16 +1541,16 @@ Apps de exemplo em `test/fixtures/`: Node (HTTP simples com `/health`), Node com
 
 | ID | Questão | Quando decidir |
 |---|---|---|
-| Q-01 | Nome final do projeto e do binário (`droid` pode colidir com outros comandos) | Antes da Fase 2 |
+| Q-01 | Nome final do projeto e do binário (`droid` pode colidir com outros comandos) | **Decidido (v0.3):** manter `droid`/`droidd` (nenhum binário com esses nomes no `usr/bin` do M22) |
 | Q-02 | Dado o resultado de V-02, manter o `SVDIR` do `termux-services` ou usar `runsvdir` dedicado? | **Decidido (v0.2): manter o `SVDIR` do `termux-services`** (detecção ≤ 3 s, boot OK; V-02/V-15) |
 | Q-03 | Como o `cloudflared` deve receber o token sem expô-lo em `ps` (variável de ambiente, arquivo)? | **Decidido (v0.2):** `TUNNEL_TOKEN` via envdir ou `--token-file` `0600`; nunca `--token` |
-| Q-04 | Auto-criar app no primeiro `git push` (estilo Dokku) ou exigir criação prévia? | Fase 2 (padrão proposto: exigir) |
-| Q-05 | Dar suporte a `pnpm`/`yarn`/`bun` na Fase 2 ou só `npm`? | Fase 2 |
+| Q-04 | Auto-criar app no primeiro `git push` (estilo Dokku) ou exigir criação prévia? | **Decidido (v0.3):** exigir criar o app antes do primeiro push (`git.auto_create_apps` fica `false`; push em app inexistente é negado) |
+| Q-05 | Dar suporte a `pnpm`/`yarn`/`bun` na Fase 2 ou só `npm`? | **Decidido (v0.3):** só `npm` (`npm ci` com `package-lock.json`, senão `npm install` com aviso) |
 | Q-06 | Convivência com mais de um usuário/admin (hoje: um) | Pós-Fase 3 |
-| Q-07 | Política de versionamento do Node/Python (pacotes do Termux oferecem uma versão por vez) | Fase 2 |
-| Q-08 | Licença do projeto (se for open source) | Antes de publicar |
+| Q-07 | Política de versionamento do Node/Python (pacotes do Termux oferecem uma versão por vez) | **Decidido (v0.3):** usa a versão que o pacote do Termux oferece; sem gerenciador de versões |
+| Q-08 | Licença do projeto (se for open source) | **Decidido (v0.3):** sem licença por enquanto (todos os direitos reservados ao autor) |
 | Q-09 | Limite de temperatura aceitável no M22 para uso contínuo | **Parcial (v0.2):** pico de 41,7 °C em 68 h; usar 42 °C como alerta; limite de parada fica para a Fase 4 |
-| Q-10 | Estratégia de atualização do próprio `droidd` (manual vs. comando `droid self-update`) | Fase 2/3 |
+| Q-10 | Estratégia de atualização do próprio `droidd` (manual vs. comando `droid self-update`) | **Decidido (v0.3):** atualização manual (`git pull` + `go build` + `sv restart droidd`, ver `docs/operacao.md`); sem `droid self-update` |
 
 ---
 
@@ -1558,7 +1566,7 @@ exec 2>&1
 export PATH=/data/data/com.termux/files/usr/bin:$PATH
 APP=/data/data/com.termux/files/home/droidpaas/apps/minha-api
 cd "$APP/current" || exit 1
-exec chpst -e "$APP/env" -n 10 "$APP/start.sh"
+exec chpst -e "$APP/env" -n 10 sh "$APP/start.sh"
 ```
 
 `start.sh` (gerado, `0700`):
@@ -1598,7 +1606,7 @@ exec /data/data/com.termux/files/home/droidpaas/bin/droidd serve \
 ```sh
 #!/bin/sh
 # Gerado pelo DroidPaaS — não edite.
-exec droid hook post-receive --app "__APP__"
+exec '/abs/droid' hook post-receive --app '__APP__' --socket '/abs/run/droidd.sock'
 ```
 
 (O `droid hook` lê as linhas `old new ref` do stdin, filtra o branch e conecta ao socket Unix.)

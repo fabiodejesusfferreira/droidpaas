@@ -77,6 +77,7 @@ type Apps struct {
 	// OrphanGrace é quantos ciclos seguidos um serviço precisa ficar sem dono antes de ser removido.
 	OrphanGrace int
 	missing     map[string]int
+	seen        map[string]time.Time // último Touch já absorvido pelo detector, por serviço
 }
 
 func (a *Apps) Run(ctx context.Context) error {
@@ -85,6 +86,7 @@ func (a *Apps) Run(ctx context.Context) error {
 	}
 	if a.missing == nil {
 		a.missing = map[string]int{}
+		a.seen = map[string]time.Time{}
 	}
 	if a.OrphanGrace == 0 {
 		a.OrphanGrace = 3
@@ -136,6 +138,11 @@ func (a *Apps) reconcileApp(ctx context.Context, app store.App) error {
 	case !wantUp:
 		a.Tracker.Forget(name)
 		return nil
+	}
+	// reinícios causados pelo próprio DroidPaaS (deploy, restart, start) zeram o histórico: não são quedas
+	if touch := a.Svc.LastTouch(app.ID); touch.After(a.seen[name]) {
+		a.seen[name] = touch
+		a.Tracker.Forget(name)
 	}
 	if a.Tracker.Observe(name, st, a.Now()) {
 		return a.markCrashed(ctx, app, name)

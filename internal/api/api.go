@@ -60,6 +60,8 @@ func (s *Server) Public() http.Handler {
 	s.registerApps(mux)
 	s.registerDeploys(mux)
 	s.registerSSHKeys(mux)
+	s.registerGitHTTP(mux)
+	mux.HandleFunc("GET /api/v1/backup", s.full(s.handleBackup))
 	mux.HandleFunc("GET /api/v1/me", s.full(s.handleMe))
 	mux.HandleFunc("GET /api/v1/system", s.full(s.handleSystem))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {

@@ -65,7 +65,26 @@ type Service struct {
 	PortFree func(port int) bool
 	Prefix   string
 
-	portMu sync.Mutex
+	portMu  sync.Mutex
+	touchMu sync.Mutex
+	touched map[int64]time.Time
+}
+
+// Touch registra que o DroidPaaS mexeu no processo do app (start/stop/restart/deploy): o detector de crash loop
+// não pode contar esses reinícios como quedas do app.
+func (s *Service) Touch(id int64) {
+	s.touchMu.Lock()
+	defer s.touchMu.Unlock()
+	if s.touched == nil {
+		s.touched = map[int64]time.Time{}
+	}
+	s.touched[id] = time.Now()
+}
+
+func (s *Service) LastTouch(id int64) time.Time {
+	s.touchMu.Lock()
+	defer s.touchMu.Unlock()
+	return s.touched[id]
 }
 
 func (s *Service) wake() {
@@ -367,6 +386,7 @@ func (s *Service) Start(ctx context.Context, name string) (store.App, error) {
 	if err := s.Runit.Up(ctx, s.ServiceName(name)); err != nil {
 		return a, err
 	}
+	s.Touch(a.ID)
 	s.Events.Info(ctx, "app.started", &a.ID, "app iniciado: "+name, nil)
 	s.wake()
 	return s.Store.AppByName(ctx, name)
@@ -383,6 +403,7 @@ func (s *Service) Stop(ctx context.Context, name string) (store.App, error) {
 	if err := s.Runit.Down(ctx, s.ServiceName(name)); err != nil && !errors.Is(err, runit.ErrNoService) {
 		return a, err
 	}
+	s.Touch(a.ID)
 	s.Events.Info(ctx, "app.stopped", &a.ID, "app parado: "+name, nil)
 	s.wake()
 	return s.Store.AppByName(ctx, name)
@@ -404,6 +425,7 @@ func (s *Service) Restart(ctx context.Context, name string) (store.App, error) {
 	if err := s.Runit.Restart(ctx, s.ServiceName(name), 10*time.Second); err != nil {
 		return a, err
 	}
+	s.Touch(a.ID)
 	s.Events.Info(ctx, "app.restarted", &a.ID, "app reiniciado: "+name, nil)
 	s.wake()
 	return s.Store.AppByName(ctx, name)

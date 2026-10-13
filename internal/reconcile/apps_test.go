@@ -251,3 +251,28 @@ func TestOrphanGraceResetsWhenOwnerReturns(t *testing.T) {
 		t.Fatal("serviço de app existente foi removido")
 	}
 }
+
+func TestOwnRestartsAreNotCrashes(t *testing.T) {
+	f := newFx(t)
+	a, _ := f.svc.Create(f.ctx, apps.CreateInput{Name: "web"})
+	f.release(t, a, "node")
+	f.cycle(t) // sobe
+	// 10 reinícios pedidos pelo próprio DroidPaaS (deploys/restarts), cada um absorvido antes do ciclo seguinte
+	for i := 0; i < 10; i++ {
+		f.rt.Crash("dp-app-web")
+		f.svc.Touch(a.ID)
+		f.cycle(t)
+	}
+	got, _ := f.svc.Get(f.ctx, "web")
+	if got.CrashedAt != nil || !f.rt.Svcs["dp-app-web"].Up {
+		t.Fatal("reinícios causados pelo DroidPaaS não podem virar crash loop")
+	}
+	// mas quedas reais depois disso continuam sendo detectadas
+	for i := 0; i < 8; i++ {
+		f.rt.Crash("dp-app-web")
+		f.cycle(t)
+	}
+	if got, _ = f.svc.Get(f.ctx, "web"); got.CrashedAt == nil {
+		t.Fatal("o crash loop real deveria ser detectado")
+	}
+}

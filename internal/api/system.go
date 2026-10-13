@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"droidpaas/internal/runit"
+	"droidpaas/internal/tunnel"
 )
 
 // handleSystem: versões, uptime e estado dos serviços base (TSD §14.2). As métricas do aparelho (bateria, RAM,
@@ -29,6 +30,10 @@ func (s *Server) handleSystem(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	tun := "not_configured"
+	if s.Runit != nil {
+		tun = tunnel.State(ctx, s.Cfg, s.Store, s.Runit)
+	}
 	svc["sshd"] = "down"
 	if c, err := net.DialTimeout("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(s.Cfg.Git.SSHPort)), time.Second); err == nil {
 		c.Close()
@@ -45,6 +50,7 @@ func (s *Server) handleSystem(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{
 		"version": s.Version, "go": runtime.Version(), "uptime_s": int(time.Since(s.Started).Seconds()),
 		"services": svc, "apps": map[string]any{"total": total, "by_state": counts},
-		"proxy": map[string]string{"listen": s.Cfg.Proxy.Listen, "admin": s.Cfg.Proxy.Admin},
+		"proxy":  map[string]string{"listen": s.Cfg.Proxy.Listen, "admin": s.Cfg.Proxy.Admin},
+		"tunnel": tun,
 	})
 }

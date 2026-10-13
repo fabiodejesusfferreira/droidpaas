@@ -25,6 +25,7 @@ import (
 	"droidpaas/internal/runit"
 	"droidpaas/internal/store"
 	"droidpaas/internal/system"
+	"droidpaas/internal/tunnel"
 )
 
 func runServe(args []string) error {
@@ -80,6 +81,7 @@ func runServe(args []string) error {
 		reconcile.Step{Name: "apps", Run: (&reconcile.Apps{Store: st, Svc: svc, Runit: rt, Events: ev, Log: log, Deploying: eng.IsDeploying,
 			Tracker: reconcile.NewCrashTracker(cfg.Reconcile.CrashLoopWindow.D(), cfg.Reconcile.CrashLoopThreshold)}).Run},
 		reconcile.Step{Name: "logs", Run: reconcile.Every(time.Hour, eng.PruneLogs)},
+		reconcile.Step{Name: "tunnel", Run: (&tunnel.Controller{Store: st, Cfg: cfg, Runit: rt, Box: box, Events: ev}).Step},
 		reconcile.Step{Name: "proxy", Run: proxy.NewController(st, cfg, rt, proxy.NewClient(cfg.Proxy.Admin), ev).Step})
 	svc.Wake, srv.OnChange, eng.Wake = loop.Wake, loop.Wake, loop.Wake
 	go eng.Run(ctx)

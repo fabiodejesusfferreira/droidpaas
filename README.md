@@ -10,7 +10,7 @@ Micro-PaaS auto-hospedado que roda **nativamente no Termux** (Android, sem root,
 |---|---|---|---|
 | 0 | Bootstrap do repositório | ☑ concluída (`make test` e `make build` verdes) | [docs/fase-0](docs/fase-0/README.md) |
 | 1 | Prova de Conceito no aparelho (go/no-go) | ☑ **GO condicional** (falta token/wildcard/SSE da Cloudflare; exige domínio, bloqueia só a sub-fase 2I) | [docs/fase-1](docs/fase-1/README.md) |
-| 2 | MVP sem painel (`droidd` + `droid` + API) | ◐ em andamento (2A ☑) | [docs/fase-2](docs/fase-2/README.md) |
+| 2 | MVP sem painel (`droidd` + `droid` + API) | ◐ implementado e verificado no aparelho (164 checagens); falta o gate em instalação real (soak 72 h, reboot) | [docs/fase-2](docs/fase-2/README.md) |
 | 3 | Painel web | ☐ | [docs/fase-3](docs/fase-3/README.md) |
 
 Especificação completa: [docs/tsd.md](docs/tsd.md).
@@ -28,11 +28,23 @@ test/e2e/               roteiros para rodar no aparelho
 docs/                   TSD e um README por fase
 ```
 
+## Uso rápido (no Termux)
+
+```bash
+sh scripts/install.sh                       # compila no aparelho e roda `droidd init`
+droid login --url http://127.0.0.1:8090 --token dp_...
+droid apps create minha-api && droid keys add ~/.ssh/id_ed25519.pub
+git push droid main                         # build e deploy aparecem no terminal
+```
+
+Guia completo: [docs/operacao.md](docs/operacao.md).
+
 ## Desenvolvimento
 
 Requer Go ≥ 1.22.
 
 ```bash
-make test    # go test ./...
+make test    # go test ./... (PC; usa runit/proxy/dispositivo falsos)
 make build   # binários em bin/
+make e2e     # no Termux: suítes de test/e2e com runit, Caddy, sshd e git reais num sandbox
 ```

@@ -216,3 +216,33 @@ func TestParseInterspersed(t *testing.T) {
 		t.Fatalf("%v %v %v %v", pos, *f, *n, err)
 	}
 }
+
+func TestTunnelAndBackup(t *testing.T) {
+	e := setup(t)
+	droid(t, "", "tunnel", "set", "--token", "TOKEN-DE-TESTE").ok(t).has(t, "salvo")
+	if v, ok, _ := e.Srv.Store.Setting(t.Context(), "tunnel_token"); !ok || strings.Contains(v, "TOKEN-DE-TESTE") {
+		t.Fatalf("token deve estar guardado cifrado: %q %v", v, ok)
+	}
+	droid(t, "", "tunnel", "set", "--clear").ok(t).has(t, "removido")
+	if _, ok, _ := e.Srv.Store.Setting(t.Context(), "tunnel_token"); ok {
+		t.Fatal("token deveria ter sido apagado")
+	}
+
+	os.MkdirAll(e.Srv.Cfg.Dir("etc", "secrets"), 0o700)
+	os.WriteFile(e.Srv.Cfg.KeyPath(), bytes.Repeat([]byte{7}, 32), 0o600)
+	dir := t.TempDir()
+	r := droid(t, "", "backup", "--out", dir+"/b.db").ok(t)
+	r.has(t, "backup gravado")
+	b, _ := os.ReadFile(dir + "/b.db")
+	if !bytes.HasPrefix(b, []byte("SQLite format 3\x00")) {
+		t.Fatal("não é um SQLite")
+	}
+	if st, _ := os.Stat(dir + "/b.db"); st.Mode().Perm() != 0o600 {
+		t.Fatalf("modo %v", st.Mode())
+	}
+	r = droid(t, "", "backup", "--out", dir+"/c.tar.gz", "--with-key").ok(t)
+	r.has(t, "master.key") // aviso de sensibilidade
+	if st, _ := os.Stat(dir + "/c.tar.gz"); st.Size() < 100 || st.Mode().Perm() != 0o600 {
+		t.Fatalf("%v", st)
+	}
+}

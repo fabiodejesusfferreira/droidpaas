@@ -18,7 +18,7 @@ func TestInitEndToEnd(t *testing.T) { // AT-01
 	home := filepath.Join(t.TempDir(), "dp")
 	in := "admin\numa-senha-bem-longa\numa-senha-bem-longa\n"
 	var out, errw bytes.Buffer
-	if err := runInit([]string{"--home", home}, strings.NewReader(in), &out, &errw); err != nil {
+	if err := runInit([]string{"--no-service", "--home", home}, strings.NewReader(in), &out, &errw); err != nil {
 		t.Fatalf("%v\n%s", err, errw.String())
 	}
 
@@ -57,7 +57,7 @@ func TestInitEndToEnd(t *testing.T) { // AT-01
 
 	// segunda execução é idempotente: não recria admin nem token
 	out.Reset()
-	if err := runInit([]string{"--home", home}, strings.NewReader(""), &out, &errw); err != nil {
+	if err := runInit([]string{"--no-service", "--home", home}, strings.NewReader(""), &out, &errw); err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(out.String(), "dp_") || !strings.Contains(out.String(), "já existe") {
@@ -69,8 +69,24 @@ func TestInitRejectsShortAndMismatchedPassword(t *testing.T) {
 	for _, in := range []string{"admin\ncurta\ncurta\n", "admin\numa-senha-bem-longa\noutra-senha-longa\n"} {
 		home := filepath.Join(t.TempDir(), "dp")
 		var out, errw bytes.Buffer
-		if err := runInit([]string{"--home", home}, strings.NewReader(in), &out, &errw); err == nil {
+		if err := runInit([]string{"--no-service", "--home", home}, strings.NewReader(in), &out, &errw); err == nil {
 			t.Errorf("esperava erro para %q", in)
 		}
+	}
+}
+
+func TestDroiddSpec(t *testing.T) {
+	cfg := config.Default()
+	cfg.SetHome("/h")
+	s := droiddSpec(cfg)
+	if s.Name != "droidd" || !strings.Contains(s.Run, "exec /h/bin/droidd serve --home /h") || !strings.Contains(s.Run, "GOMEMLIMIT=64MiB") || s.Down {
+		t.Fatalf("%+v", s)
+	}
+	// sem SVDIR (PC de desenvolvimento) o init só avisa
+	cfg.Runit.ServiceDir = "/nao/existe"
+	var out, errw bytes.Buffer
+	ensureService(context.Background(), cfg, &out, &errw)
+	if !strings.Contains(out.String(), "não criado") || errw.Len() != 0 {
+		t.Fatalf("%q %q", out.String(), errw.String())
 	}
 }

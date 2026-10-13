@@ -648,6 +648,9 @@ func (c *cli) status(args []string) error {
 	for _, n := range names {
 		fmt.Fprintf(c.out, "  %-16s %v\n", n, svc[n])
 	}
+	if t, ok := s["tunnel"]; ok {
+		fmt.Fprintf(c.out, "  %-16s %v\n", "túnel", t)
+	}
 	apps, _ := s["apps"].(map[string]any)
 	fmt.Fprintf(c.out, "apps: %v", apps["total"])
 	if by, ok := apps["by_state"].(map[string]any); ok {

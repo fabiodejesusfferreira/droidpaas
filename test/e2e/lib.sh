@@ -123,7 +123,7 @@ e2e_setup() {
   mkdir -p "$E2E_HOME/sv"
   say "init"
   local out
-  out=$(printf 'admin\nsenha-de-teste-12345\nsenha-de-teste-12345\n' | "$E2E_HOME/bin/droidd" init --home "$E2E_HOME/home" 2>&1)
+  out=$(printf 'admin\nsenha-de-teste-12345\nsenha-de-teste-12345\n' | "$E2E_HOME/bin/droidd" init --no-service --home "$E2E_HOME/home" 2>&1)
   TOKEN=$(printf '%s' "$out" | grep -o 'dp_[A-Za-z0-9_-]*' | head -1)
   [ -n "$TOKEN" ] || { echo "init falhou: $out"; exit 1; }
   local toml="$E2E_HOME/home/etc/droidd.toml"

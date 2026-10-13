@@ -12,7 +12,7 @@
 - ☑ 2F Git SSH + hook → AT-03
 - ☑ 2G Reconciliador, crash loop, logs de runtime → AT-09, AT-10
 - ☑ 2H CLI `droid` + runtimes python/go/custom → AT-07
-- ☐ 2I Túnel, Git HTTP, backup, docs, soak 72 h → AT-11
+- ◐ 2I Túnel, Git HTTP, backup, docs (prontos) · soak 72 h e AT-11 (pendentes: exigem instalação real) → AT-11
 
 ## Gate
 
@@ -115,3 +115,26 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 **Testes:** 8 testes de integração da CLI (em processo, contra o servidor real em memória) + `test/e2e/2h-cli.sh` no aparelho (**44 verificações**): deploy de node com `npm run build` (11 s), python com venv+pip (19 s), go com `go build` (46 s), site estático e custom com Procfile, erro claro quando não há runtime detectável, e o uso diário só pela CLI (`login`, `deploy`, `env set --secret --restart`, `reveal`, `logs`, `deploy --rebuild`, `rollback`, `stop`/`start`, `apps rm`).
 
 **Correções feitas aqui:** o estado de um site estático era `stopped` (o serviço runit fica parado de propósito); agora é `running` quando a release está ativa e o app deve rodar. `droid status` lista os serviços pelo nome real (prefixo configurável).
+
+### 2I — Túnel, Git HTTP, backup e entrega (código e docs concluídos em 2026-10-13)
+
+`internal/tunnel` (serviço `dp-cloudflared` em modo token: o token vai para `etc/tunnel-env/TUNNEL_TOKEN` 0600, lido pelo `chpst -e`, e **nunca** aparece no script nem no `ps`; o serviço some quando o token é removido; estado `connected/connecting/down` pelo log), Git smart HTTP em `/git/<app>.git/*` (Basic com token `git`/`full`, `git http-backend` via CGI, o log do deploy chega ao terminal do `git push`), `GET /api/v1/backup` + `droid backup [--with-key]`, serviço runit `droidd` criado pelo `droidd init` (`--no-service` para sandboxes), `scripts/install.sh`, `docs/operacao.md` e o roteiro do soak (`scripts/soak/`).
+
+**Teste no aparelho** (`test/e2e/2i-delivery.sh`, 26 verificações): token do túnel em arquivo 0600/diretório 0700, ausente do script, do `ps -A` e do banco (cifrado); Git HTTP com token de escopo `git` (clone/push → deploy com `remote:` no terminal; token inválido recusado; token `git` não acessa a API); backup 0600 com segredos cifrados, `.tar.gz` com `master.key`, e **restauração**: o `droidd` sobe sobre o backup e decifra o segredo com a chave do backup; reinício do `droidd` preserva tudo.
+
+**Correção importante:** reinícios feitos pelo próprio DroidPaaS (deploy, start/stop/restart, rollback) contavam como quedas do app no detector de crash loop e podiam marcá-lo `crashed` depois de vários deploys seguidos. Agora `apps.Service.Touch` zera o histórico do detector.
+
+### Estado do gate da Fase 2
+
+| Critério (§16.2) | Situação |
+|---|---|
+| Todos os RF "M" implementados; testes unitários/integração com fakes | ✅ `make test` (15 pacotes) |
+| AT-02, 03, 04, 05, 06, 07, 08, 09, 10, 12 no aparelho | ✅ automatizados e verdes (2D 9 · 2E 22 · 2F 29 · 2G 24 · 2H 44 · 2I 26 · soak-smoke 10 = **164** checagens) |
+| AT-01 `droidd init` em ambiente limpo | ✅ automatizado (PC e aparelho, sandbox); falta rodar `scripts/install.sh` na instalação real |
+| AT-11 reboot do aparelho | ⏳ exige instalação real (o PoC já validou o mecanismo: Termux:Boot + runsvdir) |
+| RNF-01/02 (`droidd` ≤ 40 MB e < 1 % CPU) | ✅ medido: 9,6 MB ocioso / 0 % (2A) e 18–19 MB com 4 apps + deploys (soak reduzido) |
+| Soak de 72 h sem mortes não intencionais (RNF-10) | ⏳ `scripts/soak/soak.sh` pronto e validado em escala reduzida; precisa de 72 h na instalação real |
+| RNF-16/túnel público com domínio (RF-16) | ⏳ o plumbing está testado; a validação ponta a ponta exige um domínio na Cloudflare |
+| Documentação mínima publicada; TSD atualizado | ✅ `docs/operacao.md`, TSD v0.3 |
+
+**Para fechar o gate** é preciso instalar de verdade no M22 (`sh scripts/install.sh`), rodar o soak por 72 h (`nohup bash scripts/soak/soak.sh &`, depois `python3 scripts/soak/summary.py`), fazer um reboot (AT-11) e, com um domínio, validar o túnel. Isso altera o `SVDIR` e o boot reais do aparelho, por isso depende de autorização explícita.

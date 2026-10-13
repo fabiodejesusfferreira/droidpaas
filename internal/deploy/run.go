@@ -320,6 +320,7 @@ func (j *job) activate(parent context.Context, plan build.Plan) (string, string)
 		j.say("o app está parado: a release foi ativada sem iniciar o processo")
 	}
 
+	e.Apps.Touch(app.ID) // o restart do deploy não é uma queda do app
 	j.stage("finalize")
 	size := dirSize(j.rel.Path)
 	j.rel.Status, j.rel.SizeBytes = "ready", &size
@@ -363,6 +364,7 @@ func (j *job) rollback(ctx context.Context, cause error) (string, string) {
 			err = j.waitHealthy(ctx, prevPlan)
 		}
 	}
+	e.Apps.Touch(app.ID)
 	if err != nil {
 		j.say("o rollback também falhou: %v", err)
 		e.Events.Error(ctx, "deploy.rollback_failed", &app.ID, "o rollback falhou", map[string]any{"err": err.Error()})

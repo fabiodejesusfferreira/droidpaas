@@ -12,12 +12,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pelletier/go-toml/v2"
 	"golang.org/x/term"
 
 	"droidpaas/internal/auth"
 	"droidpaas/internal/config"
+	"droidpaas/internal/runit"
 	"droidpaas/internal/store"
 )
 
@@ -32,6 +34,7 @@ func runInit(args []string, stdin io.Reader, out, errw io.Writer) error {
 	home := fs.String("home", defaultHome(), "diretório base ($DP_HOME)")
 	user := fs.String("admin-user", "", "usuário admin (pergunta se vazio)")
 	pwStdin := fs.Bool("password-stdin", false, "ler a senha de stdin sem prompt interativo")
+	noService := fs.Bool("no-service", false, "não criar o serviço runit do droidd (sandbox/testes)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -88,6 +91,9 @@ func runInit(args []string, stdin io.Reader, out, errw io.Writer) error {
 	}
 
 	linkBins(cfg, out)
+	if !*noService {
+		ensureService(ctx, cfg, out, errw)
+	}
 	writeBootScript(cfg, out)
 	fmt.Fprint(out, checklist)
 	return nil
@@ -190,7 +196,7 @@ func writeBootScript(cfg config.Config, out io.Writer) {
 const checklist = `
 Próximos passos (checklist pós-instalação):
   - Desative o phantom process killer via adb (docs/fase-1/1A-ambiente.md) e isente o Termux da otimização de bateria.
-  - Os serviços runit (droidd, dp-caddy) serão criados na sub-fase 2C; por ora, rode "droidd serve" à mão.
+  - O serviço runit "droidd" sobe o daemon (que cria o dp-caddy). Veja "droid status" depois de "droid login".
   - Configure o domínio base e o túnel quando houver domínio na Cloudflare.
 `
 
@@ -214,4 +220,28 @@ func linkBins(cfg config.Config, out io.Writer) {
 			fmt.Fprintln(out, "link:", dst, "->", src)
 		}
 	}
+}
+
+// droiddSpec é o serviço runit do daemon (TSD A.3). O nome não leva o prefixo `dp-` (§6.1).
+func droiddSpec(cfg config.Config) runit.ServiceSpec {
+	prefix := runit.Prefix()
+	logDir := cfg.Dir("logs", "droidd")
+	run := "#!" + prefix + "/bin/sh\nexec 2>&1\nexport PATH=" + prefix + "/bin:$PATH\nexport GOMEMLIMIT=64MiB\n" +
+		"exec " + cfg.Dir("bin", "droidd") + " serve --home " + cfg.Paths.Home + "\n"
+	return runit.ServiceSpec{Name: "droidd", Run: run, LogRun: runit.LogRun(prefix, logDir), LogDir: logDir, LogConfig: runit.LogConfig(1_000_000, 5)}
+}
+
+// ensureService cria o serviço `droidd` se o SVDIR do termux-services existir. Nunca falha o init.
+func ensureService(ctx context.Context, cfg config.Config, out, errw io.Writer) {
+	if fi, err := os.Stat(cfg.Runit.ServiceDir); err != nil || !fi.IsDir() {
+		fmt.Fprintf(out, "serviço runit não criado: %s não existe (instale termux-services e reabra o Termux). Rode `droidd serve` à mão.\n", cfg.Runit.ServiceDir)
+		return
+	}
+	cctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+	if err := runit.New(cfg.Runit.ServiceDir).Ensure(cctx, droiddSpec(cfg)); err != nil {
+		fmt.Fprintf(errw, "aviso: não consegui criar o serviço droidd: %v\n", err)
+		return
+	}
+	fmt.Fprintf(out, "serviço runit criado: %s/droidd (o droidd sobe em instantes e o dp-caddy é criado por ele)\n", cfg.Runit.ServiceDir)
 }
