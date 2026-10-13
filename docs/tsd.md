@@ -1548,7 +1548,7 @@ Apps de exemplo em `test/fixtures/`: Node (HTTP simples com `/health`), Node com
 | Q-05 | Dar suporte a `pnpm`/`yarn`/`bun` na Fase 2 ou só `npm`? | **Decidido (v0.3):** só `npm` (`npm ci` com `package-lock.json`, senão `npm install` com aviso) |
 | Q-06 | Convivência com mais de um usuário/admin (hoje: um) | Pós-Fase 3 |
 | Q-07 | Política de versionamento do Node/Python (pacotes do Termux oferecem uma versão por vez) | **Decidido (v0.3):** usa a versão que o pacote do Termux oferece; sem gerenciador de versões |
-| Q-08 | Licença do projeto (se for open source) | **Decidido (v0.3):** sem licença por enquanto (todos os direitos reservados ao autor) |
+| Q-08 | Licença do projeto (se for open source) | **Decidido (v0.3):** MIT — o repositório já traz o arquivo `LICENSE` (MIT, © 2026 Fábio de Jesus) desde o commit inicial |
 | Q-09 | Limite de temperatura aceitável no M22 para uso contínuo | **Parcial (v0.2):** pico de 41,7 °C em 68 h; usar 42 °C como alerta; limite de parada fica para a Fase 4 |
 | Q-10 | Estratégia de atualização do próprio `droidd` (manual vs. comando `droid self-update`) | **Decidido (v0.3):** atualização manual (`git pull` + `go build` + `sv restart droidd`, ver `docs/operacao.md`); sem `droid self-update` |
 

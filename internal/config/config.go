@@ -139,6 +139,9 @@ func expand(s string) string {
 	return s
 }
 
+// Expand resolve ~, $PREFIX e variáveis de ambiente nos caminhos (Load já faz isso; o init parte dos defaults).
+func (c *Config) Expand() { c.expand() }
+
 func (c *Config) expand() {
 	c.Paths.Home = expand(c.Paths.Home)
 	c.Runit.ServiceDir = expand(c.Runit.ServiceDir)

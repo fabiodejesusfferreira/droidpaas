@@ -67,3 +67,16 @@ func TestExpandTildeAndPrefix(t *testing.T) {
 		t.Fatal("HOME não expandido")
 	}
 }
+
+func TestExpandMethodResolvesPrefix(t *testing.T) {
+	t.Setenv("PREFIX", "/p")
+	c := Default()
+	c.SetHome(t.TempDir())
+	c.Expand()
+	if c.Runit.ServiceDir != "/p/var/service" {
+		t.Fatalf("service_dir = %q (o init precisa do caminho expandido para achar o SVDIR)", c.Runit.ServiceDir)
+	}
+	if strings.Contains(c.Git.AuthorizedKeys, "~") {
+		t.Fatalf("authorized_keys = %q", c.Git.AuthorizedKeys)
+	}
+}

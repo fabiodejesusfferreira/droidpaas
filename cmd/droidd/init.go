@@ -47,6 +47,7 @@ func runInit(args []string, stdin io.Reader, out, errw io.Writer) error {
 
 	cfg := config.Default()
 	cfg.SetHome(*home)
+	cfg.Expand()
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
