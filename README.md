@@ -10,7 +10,7 @@ Micro-PaaS auto-hospedado que roda **nativamente no Termux** (Android, sem root,
 |---|---|---|---|
 | 0 | Bootstrap do repositório | ☑ concluída (`make test` e `make build` verdes) | [docs/fase-0](docs/fase-0/README.md) |
 | 1 | Prova de Conceito no aparelho (go/no-go) | ☑ **GO condicional** (falta token/wildcard/SSE da Cloudflare; exige domínio, bloqueia só a sub-fase 2I) | [docs/fase-1](docs/fase-1/README.md) |
-| 2 | MVP sem painel (`droidd` + `droid` + API) | ◐ implementado e verificado no aparelho (164 checagens); falta o gate em instalação real (soak 72 h, reboot) | [docs/fase-2](docs/fase-2/README.md) |
+| 2 | MVP sem painel (`droidd` + `droid` + API) | ☑ **gate fechado** (soak de 72 h: 0 mortes, 17 060/17 060 sondas ok; reboot ok). Pendente, não bloqueante: túnel com domínio (RF-16) | [docs/fase-2](docs/fase-2/README.md) |
 | 3 | Painel web | ☐ | [docs/fase-3](docs/fase-3/README.md) |
 
 Especificação completa: [docs/tsd.md](docs/tsd.md).

@@ -12,7 +12,7 @@
 - ☑ 2F Git SSH + hook → AT-03
 - ☑ 2G Reconciliador, crash loop, logs de runtime → AT-09, AT-10
 - ☑ 2H CLI `droid` + runtimes python/go/custom → AT-07
-- ◐ 2I Túnel, Git HTTP, backup, docs (prontos) · soak 72 h e AT-11 (pendentes: exigem instalação real) → AT-11
+- ☑ 2I Túnel, Git HTTP, backup, docs, soak 72 h e AT-11 → AT-11 (RF-16 com domínio: pendência não bloqueante, ver abaixo)
 
 ## Gate
 
@@ -148,3 +148,43 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 **Soak de 72 h ⏳ em andamento:** iniciado em `2026-10-13T01:35Z` (22:35 em Brasília de 12/10), término previsto `2026-10-16T01:35Z`, com `scripts/soak/soak.sh` (apps `soaknode`, `soakpy`, `soakgo`, `soaksite`; deploy a cada 4 h, restart a cada 3 h, `kill -9` a cada 8 h). Saídas em `~/soak/` no aparelho; resumo com `python3 ~/droidpaas-src/scripts/soak/summary.py`. Aparelho na tomada (91 %, 37 °C no início).
 
 **Túnel público com domínio (RF-16) ⏳:** aguardando um domínio na Cloudflare.
+
+### Soak de 72 h — resultado (colhido em 2026-10-16)
+
+Instalação real no M22 (`droidd` + `dp-caddy` + 4 apps de exemplo), de `2026-10-13T01:35Z` a `2026-10-16T01:37Z` (4 265 amostras de 60 s, 0 lacunas > 150 s). O usuário usou o aparelho normalmente e o tirou da tomada várias vezes (**86 % das amostras fora da tomada**; bateria 50–100 %); o `droidd` e o Caddy seguiram sem nenhum restart por **93 h 50 min** (o soak terminou com 72 h; o aparelho ficou ligado até a colheita). Dados brutos em [soak/](soak/).
+
+| Critério / métrica | Resultado |
+|---|---|
+| **Mortes não intencionais** (RNF-10, critério: 0) | **0** — 8 `kill -9` e 23 restarts pedidos, todos recuperados; PIDs distintos por app: node 20, python 22, go 9, static 1 (todos explicados por deploys/restarts/kills pedidos) |
+| Sondas HTTP pelo Caddy | **17 060 de 17 060 = 200** (0 falhas) |
+| Latência via Caddy | p50 7 ms · p95 13 ms · máx 99 ms |
+| Recuperação após `kill -9` (RNF-06, ≤ 5 s) | 55–67 ms (o runit reinicia na hora quando o app viveu > 1 s) |
+| Deploys periódicos | 17/17 com sucesso (node e python, ~10–20 s cada) |
+| RSS do `droidd` (RNF-01 ≤ 40 MB) | **17,1 → 17,1 MB** entre o primeiro e o último quarto; mín 12,4 · máx 19,1 MB — sem vazamento |
+| CPU do `droidd` (RNF-02 < 1 %) | **0,68 %** de um núcleo (41 ticks/60 s) com 0 apps, medido na colheita |
+| Temperatura da bateria | mín 21,6 · média 28,6 · p95 32,6 · **máx 37,9 °C** (< 42 °C) |
+| RAM disponível | mín 433 MB (02:05Z de 13/10, na tomada, durante a fase de builds do início) · média 1 419 MB; nenhum OOM |
+| Disco do `$DP_HOME` | 146 → 173 → 201 → 202 → 202 MB: cresce enquanto o cache e as 5 releases se enchem e **estabiliza** (retenção funciona) |
+| Banco | `droidpaas.db` 112 KB; WAL de 3,2 MB (agora limitado por `journal_size_limit`) |
+| Eventos | 24 deploys `succeeded`, 1 `app.crash_loop` (o app de teste do AT-11, esperado), 2 `proxy.apply_failed` |
+
+**Achados da colheita (corrigidos):**
+- Os 2 `proxy.apply_failed` foram `connection refused` na Admin API do Caddy **logo depois do start** (na instalação e no reboot). Era ruído: o Caddy já sobe com o `caddy.json` certo. Agora uma falha dentro dos primeiros 20 s de vida do Caddy não gera erro nem evento.
+- 1 aviso `saída inesperada do sv: unable to open supervise/ok` ao criar um app (o `runsv` ainda não tinha assumido o serviço). Agora é `ErrNotReady` e o reconciliador espera o próximo ciclo.
+- O WAL do SQLite ficou em 3,2 MB: passou a usar `journal_size_limit(16 MiB)`.
+- O IP do aparelho mudou por DHCP durante o teste (192.168.1.7 → .4): para acesso remoto estável use um nome (Tailscale/mDNS) ou reserve o IP no roteador.
+- O Go do aparelho foi atualizado de 1.27.1 para 1.27.2 sem impacto.
+
+Regressão depois dessas correções, no aparelho: 2D 9 · 2E 22 · 2F 29 · 2G 24 · 2H 44 · 2I 26 verificações, todas verdes.
+
+### Gate da Fase 2 — FECHADO (2026-10-16)
+
+| Critério (§16.2) | Situação |
+|---|---|
+| Todos os RF "M" implementados; testes unitários/integração com fakes | ✅ |
+| AT-01…AT-12 no M22 | ✅ (AT-01 e AT-11 na instalação real; os demais automatizados no aparelho) |
+| RNF-01/02 medidos no aparelho | ✅ 17 MB / 0,68 % |
+| Soak de 72 h sem mortes não intencionais (RNF-10) | ✅ 0 mortes em 72 h (93 h 50 min de uptime contínuo do `droidd`) |
+| Documentação mínima publicada; TSD atualizado | ✅ `docs/operacao.md`, TSD v0.3 |
+
+**Pendência não bloqueante:** RF-16 é "Should" (e V-05 Parte B). O plumbing do túnel está testado (token em arquivo 0600, fora do `ps`, estado `connected/down`), mas a validação ponta a ponta (wildcard, acesso público e SSE pelo túnel nomeado) exige um domínio na Cloudflare. Ela **precisa** acontecer antes de usar os logs ao vivo do painel por fora da rede local (Fase 3).

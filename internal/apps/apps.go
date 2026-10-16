@@ -241,6 +241,9 @@ func (s *Service) State(ctx context.Context, a store.App) string {
 	}
 	st, err := s.Runit.Status(ctx, s.ServiceName(a.Name))
 	if err != nil {
+		if errors.Is(err, runit.ErrNotReady) {
+			return "starting"
+		}
 		if errors.Is(err, runit.ErrNoService) && a.CurrentReleaseID != nil {
 			return "error"
 		}

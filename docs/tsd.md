@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | DroidPaaS (nome provisório) |
-| **Versão do documento** | 0.3 — Fase 2 implementada (gate no aparelho pendente) |
+| **Versão do documento** | 0.3 — Fase 2 concluída (gate fechado em 2026-10-16) |
 | **Data** | 2026-10-13 (v0.1: 2026-10-09) |
 | **Escopo deste documento** | Fases 1, 2 e 3 (Prova de Conceito, MVP sem painel, Painel web) |
 | **Dispositivo-alvo de referência** | Samsung Galaxy M22, 4 GB de RAM (aparelho de testes/sandbox) |
@@ -1381,7 +1381,7 @@ Toda dependência do ambiente atrás de interface, com implementação **real** 
 
 ### 16.2 Fase 2 — MVP sem painel (≈ 2–3 semanas)
 
-> **Status (2026-10-13):** sub-fases 2A–2I implementadas e verificadas no M22 por 154 checagens automatizadas (`test/e2e/`); falta o gate em instalação real: soak de 72 h, AT-11 (reboot) e a medição de RNF-01/02 em uso. Ver `docs/fase-2/README.md`.
+> **Status (2026-10-16):** Fase 2 **concluída**: sub-fases 2A–2I verificadas no M22 (154 checagens automatizadas em `test/e2e/` + instalação real), AT-11 (reboot) ok e soak de 72 h com 0 mortes não intencionais (RSS do `droidd` 17 MB, CPU 0,68 %, bateria ≤ 37,9 °C). Pendente, não bloqueante: RF-16 de ponta a ponta com domínio. Ver `docs/fase-2/README.md`.
 
 **Entregáveis**
 

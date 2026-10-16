@@ -64,8 +64,25 @@ func TestControllerStep(t *testing.T) {
 	if fc.loads != 3 {
 		t.Fatalf("restart do Caddy deveria reaplicar: loads=%d", fc.loads)
 	}
-	// falha do Caddy: erro propagado, evento registrado, config anterior mantida
+	// Caddy recém-reiniciado e Admin API ainda fora do ar: falha esperada, sem evento nem erro
 	fc.fail = true
+	rt.Crash("dp-caddy")
+	if err := c.Step(ctx); err != nil {
+		t.Fatalf("falha logo depois do start do Caddy não deve ser erro: %v", err)
+	}
+	if evs, _ := ev.List(ctx, 20, 0); func() bool {
+		for _, e := range evs {
+			if e.Kind == "proxy.apply_failed" {
+				return true
+			}
+		}
+		return false
+	}() {
+		t.Fatal("falha transitória após o start não deve gerar evento")
+	}
+	rt.Svcs["dp-caddy"].Uptime = 60 * time.Second // agora o Caddy está "velho": a falha é real
+	c.applier.Invalidate()
+	// falha do Caddy: erro propagado, evento registrado, config anterior mantida
 	st.AddDomain(ctx, a.ID, "y.ex.com", false, false)
 	if err := c.Step(ctx); err == nil {
 		t.Fatal("falha deveria ser propagada")

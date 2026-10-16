@@ -24,6 +24,7 @@ func TestParseStatus(t *testing.T) { // saídas reais observadas no PoC (1B)
 		{"down: x: 5s, want up", "down", 0, 5 * time.Second, true, nil},
 		{"run: x: (pid 9) 7s, want down", "run", 9, 7 * time.Second, false, nil},
 		{"fail: poc-app: unable to change to service directory: file does not exist", "unknown", 0, 0, false, ErrNoService},
+		{"warning: /x/var/service/dp-app-soakgo: unable to open supervise/ok: file does not exist", "unknown", 0, 0, false, ErrNotReady},
 	}
 	for _, c := range cases {
 		st, err := ParseStatus(c.in)

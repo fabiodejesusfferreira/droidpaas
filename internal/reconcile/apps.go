@@ -126,6 +126,9 @@ func (a *Apps) reconcileApp(ctx context.Context, app store.App) error {
 		return err
 	}
 	st, err := a.Runit.Status(ctx, name)
+	if errors.Is(err, runit.ErrNotReady) {
+		return nil // o runsv ainda está assumindo o serviço recém-criado; vale no próximo ciclo
+	}
 	if err != nil {
 		return err
 	}

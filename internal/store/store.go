@@ -22,7 +22,7 @@ type Store struct{ DB *sql.DB }
 
 // Open abre (ou cria) o banco e aplica as migrações pendentes.
 func Open(ctx context.Context, path string) (*Store, error) {
-	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)"
+	dsn := "file:" + path + "?_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)&_pragma=journal_size_limit(16777216)"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err

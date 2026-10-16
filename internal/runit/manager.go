@@ -176,6 +176,9 @@ func ParseStatus(out string) (ServiceStatus, error) {
 	if strings.Contains(line, "unable to change to service directory") {
 		return ServiceStatus{State: "unknown"}, ErrNoService
 	}
+	if strings.Contains(line, "unable to open supervise/ok") {
+		return ServiceStatus{State: "unknown"}, ErrNotReady
+	}
 	m := statusRe.FindStringSubmatch(line)
 	if m == nil {
 		return ServiceStatus{State: "unknown"}, fmt.Errorf("saída inesperada do sv: %q", line)

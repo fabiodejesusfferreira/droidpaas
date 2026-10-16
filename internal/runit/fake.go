@@ -20,6 +20,7 @@ type FakeService struct {
 	Up     bool
 	PID    int
 	Starts int
+	Uptime time.Duration // 0 = 30 s
 }
 
 func NewFake() *Fake { return &Fake{Svcs: map[string]*FakeService{}} }
@@ -50,7 +51,7 @@ func (f *Fake) get(name string) (*FakeService, error) {
 	return s, nil
 }
 
-func (f *Fake) start(s *FakeService) { s.Up = true; s.Starts++; s.PID = 1000 + s.Starts }
+func (f *Fake) start(s *FakeService) { s.Up = true; s.Starts++; s.PID = 1000 + s.Starts; s.Uptime = 0 }
 
 func (f *Fake) Up(_ context.Context, name string) error {
 	f.mu.Lock()
@@ -106,7 +107,11 @@ func (f *Fake) Status(_ context.Context, name string) (ServiceStatus, error) {
 		return ServiceStatus{State: "unknown"}, err
 	}
 	if s.Up {
-		return ServiceStatus{State: "run", PID: s.PID, Uptime: 30 * time.Second, WantsUp: true}, nil
+		up := s.Uptime
+		if up == 0 {
+			up = 30 * time.Second
+		}
+		return ServiceStatus{State: "run", PID: s.PID, Uptime: up, WantsUp: true}, nil
 	}
 	return ServiceStatus{State: "down"}, nil
 }
@@ -117,6 +122,7 @@ func (f *Fake) Crash(name string) {
 	defer f.mu.Unlock()
 	if s, ok := f.Svcs[name]; ok && s.Up {
 		f.start(s)
+		s.Uptime = 2 * time.Second
 	}
 }
 

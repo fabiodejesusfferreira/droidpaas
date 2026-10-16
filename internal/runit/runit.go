@@ -26,6 +26,9 @@ type ServiceStatus struct {
 
 var ErrNoService = errors.New("serviço inexistente")
 
+// ErrNotReady: o diretório existe mas o runsv ainda não o assumiu (acontece logo depois de criar um serviço).
+var ErrNotReady = errors.New("serviço ainda não supervisionado")
+
 type ServiceManager interface {
 	// Ensure cria ou atualiza o diretório do serviço de forma idempotente. Não altera o estado up/down de um serviço existente.
 	Ensure(ctx context.Context, spec ServiceSpec) error
