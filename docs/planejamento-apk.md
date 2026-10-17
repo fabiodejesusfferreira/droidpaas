@@ -22,6 +22,19 @@ Fora de escopo (por enquanto): rodar o servidor sem o Termux, empacotar o binár
 
 Texto sempre em português do Brasil, no mesmo tom do painel.
 
+## 2.1 Telas (wireframes) e navegação
+
+| # | Tela | Quando aparece | Botões |
+|---|---|---|---|
+| 1 | Primeira abertura: autorizar | Enquanto a permissão do Android ou o `allow-external-apps` não estiverem feitos | Copiar comando · Abrir o Termux · Permitir |
+| 2 | Início: ainda não instalado | Termux presente, `droidd` não responde | **Instalar o droidpaas** (principal) · Iniciar · Abrir o Termux |
+| 3 | Instalando (no Termux) | Logo após *Instalar* | Voltar ao app · Abrir o Termux |
+| 4 | Início: no ar | `healthz` responde 200 | **Abrir painel** (principal) · Reiniciar · Abrir o Termux |
+| 5 | Painel | Após *Abrir painel* | Voltar (histórico da WebView; na primeira página, volta ao Início) |
+| 6 | Termux não encontrado | Termux ausente | Baixar o Termux (F-Droid) · Baixar o Termux (GitHub) |
+
+Fluxo normal: **1 → 2 → 3 → 4 → 5**. Nas aberturas seguintes o app vai direto para 2 ou 4, conforme o status. Regras: no máximo um botão principal por tela; sem botões desabilitados (a ação some ou responde com uma mensagem); texto em português do Brasil, frases curtas, sem ponto final nos rótulos.
+
 ## 3. Como ele fala com o Termux
 
 O Termux expõe a intent `RUN_COMMAND`. Ela exige **duas** autorizações do usuário, uma única vez:
