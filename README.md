@@ -157,6 +157,14 @@ test/                   fixtures e testes de ponta a ponta para o aparelho
 docs/                   operação, TSD e um README por fase
 ```
 
+## Apoie o projeto
+
+O droidpaas é gratuito e de código aberto, feito e mantido por uma pessoa. Se ele te ajudou, você pode apoiar o trabalho:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-apoiar-0B5FFF?logo=buymeacoffee&logoColor=white)](https://buymeacoffee.com/dejesusdevts)
+
+O apoio ajuda a cobrir o que o projeto custa (aparelhos de teste, domínio e hospedagem do site) e o tempo de manutenção. Ele **não** dá direito a suporte garantido, a prazos nem ao uso do nome e da logo (veja a [política de marca](TRADEMARKS.md)). Outras formas de ajudar, de graça: dar uma estrela no repositório, relatar um problema, melhorar a documentação ou contar a outras pessoas. Veja o [guia de contribuição](CONTRIBUTING.md).
+
 ## Licença
 
 Código sob a licença [MIT](LICENSE). O nome e a logo **não** estão incluídos nessa licença: veja a [política de marca](TRADEMARKS.md). Licenças de terceiros: [NOTICE](NOTICE).
