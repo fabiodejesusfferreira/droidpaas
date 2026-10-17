@@ -69,7 +69,7 @@ gitc checkout -q main
 say "restrições do command= forçado"
 OUT=$($GIT_SSH_COMMAND "$SSH_USER@127.0.0.1" ls 2>&1); contains "ls negado" "acesso negado" "$OUT"
 OUT=$($GIT_SSH_COMMAND "$SSH_USER@127.0.0.1" 2>&1 </dev/null); contains "shell interativo negado" "acesso negado" "$OUT"
-OUT=$(git ls-remote "ssh://$SSH_USER@127.0.0.1:$SSH_PORT/nada.git" 2>&1); contains "app inexistente" "app inexistente" "$OUT"
+OUT=$(git ls-remote "ssh://$SSH_USER@127.0.0.1:$SSH_PORT/nada.git" 2>&1); contains "app inexistente avisa como criar" "não existe" "$OUT"
 OUT=$(git ls-remote "ssh://$SSH_USER@127.0.0.1:$SSH_PORT/../../etc.git" 2>&1); contains "traversal negado" "acesso negado" "$OUT"
 ssh-keygen -q -t ed25519 -N '' -f "$E2E_HOME/ssh/intruso"
 OUT=$(ssh -i "$E2E_HOME/ssh/intruso" -p $SSH_PORT -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o BatchMode=yes "$SSH_USER@127.0.0.1" ls 2>&1)

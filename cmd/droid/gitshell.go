@@ -27,7 +27,7 @@ func runGitShell(args []string) int {
 	}
 	repo := filepath.Join(*home, "apps", app, "repo.git")
 	if fi, err := os.Stat(repo); err != nil || !fi.IsDir() {
-		fmt.Fprintln(os.Stderr, "DroidPaaS: app inexistente")
+		fmt.Fprintf(os.Stderr, "DroidPaaS: o app %q não existe. Crie-o antes (painel → Novo app, ou `droid apps create %s`) e repita o git push.\n", app, app)
 		return 1
 	}
 	// o PATH do sshd é mínimo; os binários do Termux ficam em $PREFIX/bin
