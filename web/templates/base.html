@@ -19,24 +19,27 @@
 {{template "content" .}}
 </main>
 {{else}}
-<input type="checkbox" id="nav-toggle" class="nav-toggle">
+{{template "icons"}}
 <header class="topbar">
-  <label for="nav-toggle" class="menu-btn" title="{{t "nav.menu"}}"><span aria-hidden="true">☰</span><span class="sr">{{t "nav.menu"}}</span></label>
+  <button type="button" class="menu-btn" data-nav-toggle aria-controls="sidebar" aria-expanded="false" title="{{t "nav.menu"}}">{{template "ic" "menu"}}<span class="sr">{{t "nav.menu"}}</span></button>
   <a class="brand" href="/">{{template "logo"}}<span>droidpaas</span></a>
   <a class="btn primary small" href="/apps/new">+ {{t "nav.new_app"}}</a>
 </header>
-<nav class="sidebar" aria-label="{{t "nav.label"}}">
-  <a href="/"{{if eq .Nav "apps"}} aria-current="page"{{end}}>{{t "nav.apps"}}</a>
-  <a href="/apps/new"{{if eq .Nav "new"}} aria-current="page"{{end}}>{{t "nav.new_app"}}</a>
-  <a href="/events"{{if eq .Nav "events"}} aria-current="page"{{end}}>{{t "nav.events"}}</a>
-  <a href="/settings"{{if eq .Nav "settings"}} aria-current="page"{{end}}>{{t "nav.settings"}}</a>
+<div class="scrim" data-nav-toggle></div>
+<nav class="sidebar" id="sidebar" aria-label="{{t "nav.label"}}">
+  <a class="brand" href="/" title="droidpaas">{{template "logo"}}<span class="nav-label">droidpaas</span></a>
+  <a href="/"{{if eq .Nav "apps"}} aria-current="page"{{end}} title="{{t "nav.apps"}}">{{template "ic" "layout-grid"}}<span class="nav-label">{{t "nav.apps"}}</span></a>
+  <a href="/apps/new"{{if eq .Nav "new"}} aria-current="page"{{end}} title="{{t "nav.new_app"}}">{{template "ic" "circle-plus"}}<span class="nav-label">{{t "nav.new_app"}}</span></a>
+  <a href="/events"{{if eq .Nav "events"}} aria-current="page"{{end}} title="{{t "nav.events"}}">{{template "ic" "activity"}}<span class="nav-label">{{t "nav.events"}}</span></a>
+  <a href="/settings"{{if eq .Nav "settings"}} aria-current="page"{{end}} title="{{t "nav.settings"}}">{{template "ic" "settings"}}<span class="nav-label">{{t "nav.settings"}}</span></a>
   <div class="sidebar-foot">
-    <button type="button" class="btn small ghost" data-theme-toggle>{{t "theme.toggle"}}</button>
-    <form method="post" action="/logout" class="inline">
+    <button type="button" class="nav-btn" data-nav-toggle aria-controls="sidebar" aria-expanded="true" title="{{t "nav.collapse"}}"><span class="on-open">{{template "ic" "panel-left-close"}}</span><span class="on-closed">{{template "ic" "panel-left-open"}}</span><span class="nav-label">{{t "nav.collapse"}}</span></button>
+    <button type="button" class="nav-btn" data-theme-toggle title="{{t "theme.toggle"}}">{{template "ic" "sun-moon"}}<span class="nav-label">{{t "theme.toggle"}}</span></button>
+    <form method="post" action="/logout">
       <input type="hidden" name="_csrf" value="{{.CSRF}}">
-      <button class="btn small ghost" type="submit">{{t "nav.logout"}} ({{.User}})</button>
+      <button class="nav-btn" type="submit" title="{{t "nav.logout"}} ({{.User}})">{{template "ic" "log-out"}}<span class="nav-label">{{t "nav.logout"}} ({{.User}})</span></button>
     </form>
-    <span class="muted small">v{{.Version}}</span>
+    <span class="muted small nav-label">v{{.Version}}</span>
   </div>
 </nav>
 <main id="main">

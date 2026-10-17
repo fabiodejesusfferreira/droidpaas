@@ -27,6 +27,7 @@ Full license texts are in THIRD_PARTY_LICENSES.md.
 == Embutido no painel web / Embedded in the web panel ==
 
 - htmx 2.0.4 (web/static/htmx.min.js) — 0BSD — Copyright (c) 2020, Big Sky Software — https://htmx.org
+- Lucide icons (web/templates/partials/icons.html) — ISC, e MIT para os derivados do Feather — Copyright Lucide Icons and Contributors, Cole Bemis — https://lucide.dev
 
 == Na arte da logo / In the logo artwork ==
 

@@ -1,10 +1,27 @@
-/* DroidPaaS — JS mínimo (CSP: sem scripts inline). Tema, confirmações, remoção por digitação e visualizador de logs SSE. */
+/* DroidPaaS — JS mínimo (CSP: sem scripts inline). Tema, sidebar, confirmações, remoção por digitação e visualizador de logs SSE. */
 (function () {
   "use strict";
   var root = document.documentElement;
   try { var th = localStorage.getItem("dp-theme"); if (th) root.dataset.theme = th; } catch (e) {}
 
+  // sidebar: aberta/fechada em html[data-nav]; sem o atributo vale o padrão do CSS (aberta em tela larga, fechada no celular).
+  // No desktop a escolha é lembrada; a animação só liga no primeiro toque (evita animar ao carregar a página).
+  var wide = window.matchMedia("(min-width: 900px)");
+  function navOpen() { return root.dataset.nav ? root.dataset.nav === "open" : wide.matches; }
+  function navSync() { document.querySelectorAll("button[data-nav-toggle]").forEach(function (b) { b.setAttribute("aria-expanded", navOpen()); }); }
+  function setNav(open) {
+    root.classList.add("nav-anim");
+    root.dataset.nav = open ? "open" : "closed";
+    navSync();
+    if (wide.matches) try { localStorage.setItem("dp-nav", root.dataset.nav); } catch (e) {}
+  }
+  try { if (wide.matches && localStorage.getItem("dp-nav") === "closed") root.dataset.nav = "closed"; } catch (e) {}
+  navSync();
+  wide.addEventListener("change", navSync);
+  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !wide.matches && navOpen()) setNav(false); });
+
   document.addEventListener("click", function (ev) {
+    if (ev.target.closest("[data-nav-toggle]")) setNav(!navOpen());
     var b = ev.target.closest("[data-theme-toggle]");
     if (b) {
       var dark = getComputedStyle(root).colorScheme.indexOf("dark") === 0;

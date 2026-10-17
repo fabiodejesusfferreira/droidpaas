@@ -6,7 +6,7 @@ import "fmt"
 // Uma chave ausente aparece como a própria chave (visível nos testes, que também conferem os templates contra este mapa).
 var ptBR = map[string]string{
 	// navegação e layout
-	"a11y.skip": "Pular para o conteúdo", "nav.menu": "Menu", "nav.label": "Navegação principal", "nav.apps": "Apps",
+	"a11y.skip": "Pular para o conteúdo", "nav.menu": "Menu", "nav.collapse": "Recolher menu", "nav.label": "Navegação principal", "nav.apps": "Apps",
 	"nav.new_app": "Novo app", "nav.events": "Eventos", "nav.settings": "Configurações", "nav.logout": "Sair", "theme.toggle": "Tema claro/escuro",
 	"tabs.label": "Seções do app", "tabs.overview": "Visão geral", "tabs.deployments": "Deploys", "tabs.environment": "Ambiente",
 	"tabs.logs": "Logs", "tabs.domains": "Domínios", "tabs.settings": "Configurações",

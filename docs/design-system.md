@@ -92,9 +92,9 @@ Unidade base de 4 px, escrita em `rem` no CSS (espaços recorrentes: .25, .5, .7
 
 | Faixa | Navegação | Tabelas | Controles |
 |---|---|---|---|
-| < 640 px (celular) | Barra superior + menu hambúrguer que abre a lista | Viram cartões com rótulo por célula (`data-label`) | 44 px, texto de entrada a 1 rem |
-| 640–899 px (tablet) | Igual ao celular (proposto: não há layout próprio) | Tabela normal | 44 px |
-| ≥ 900 px (desktop) | Sidebar fixa de 220 px, sem barra superior | Tabela normal | 36 px **só** com `pointer: fine`; toque mantém 44 px |
+| < 640 px (celular) | Barra superior + sidebar em gaveta (desliza da esquerda) | Viram cartões com rótulo por célula (`data-label`) | 44 px, texto de entrada a 1 rem |
+| 640–899 px (tablet) | Igual ao celular: gaveta (proposto: não há layout próprio) | Tabela normal | 44 px |
+| ≥ 900 px (desktop) | Sidebar fixa de 220 px (ou faixa de 56 px, se recolhida), sem barra superior | Tabela normal | 36 px **só** com `pointer: fine`; toque mantém 44 px |
 
 Alvos de toque mínimos de 44 px; tablets com toque em tela grande ficam no modo confortável. TV e ultrawide: fora de escopo.
 
@@ -110,7 +110,22 @@ Bordas de 1 px. **Sem sombra** (elevação 0 em tudo; modal e menu usam fundo `-
 
 ## 6. Ícones
 
-Hoje o painel usa poucos glifos de texto (☰) e a logo em SVG. Para novos ícones: **Lucide** (ISC) ou Tabler (MIT), contorno de traço 1,75 px, grid de 24 px, cor `currentColor`, tamanho 16 px em linha e 20 px em botão de ícone. Não use preenchido, e não use logos de terceiros (Redis, Postgres etc.) coloridos. Inclua o SVG no HTML ou em `static/`: nada vem de CDN. Biblioteca e traço são proposta; ainda não há ícones aplicados.
+**Lucide**, obtido pelo [Iconify](https://icon-sets.iconify.design/lucide/) (ISC; o `log-out` também é MIT, herdado do Feather). Contorno de traço 2 px (o do Lucide), grid de 24 px, `currentColor`, 20 px (`1.25rem`) em menu e botões. Sem ícones preenchidos e sem logos coloridos de terceiros.
+
+Os SVGs ficam **embutidos** num sprite em [`web/templates/partials/icons.html`](../web/templates/partials/icons.html) (nada vem de CDN; a CSP só permite `'self'`). Uso no template: `{{template "ic" "nome"}}`.
+
+| Ícone | Onde |
+|---|---|
+| `layout-grid` | Apps |
+| `circle-plus` | Novo app |
+| `activity` | Eventos |
+| `settings` | Configurações |
+| `menu` | Botão da barra superior (celular) |
+| `panel-left-close` / `panel-left-open` | Recolher / expandir o sidebar |
+| `sun-moon` | Alternar tema |
+| `log-out` | Sair |
+
+Para adicionar um ícone: baixe `https://api.iconify.design/lucide/<nome>.svg`, converta em um `<symbol id="i-<nome>" viewBox="0 0 24 24">` no sprite e use. Um teste confere que todo ícone usado existe no sprite. Ícone sempre acompanhado de texto, ou com `title` e nome acessível quando for só ícone (como na faixa recolhida).
 
 ## 7. Imagens e ilustração
 
@@ -127,7 +142,7 @@ Todos existem em `app.css`; as classes abaixo são as reais.
 | Checkbox | `label.check` | 1,3 rem, `accent-color: --primary`, linha de 44 px |
 | Card | `.card`, `.cards` | **Régua de status à esquerda** (3 px) por `:has(.st-running / .st-crashed / .st-starting)`: verde, vermelho, âmbar |
 | Painel | `.panel` (`.danger`, `.secret`) | Contorno colorido para zona perigosa ou segredo |
-| Navegação | `.sidebar`, `.topbar`, `.tabs` | Item ativo: fundo `--code-bg` e **régua de 3 px em `--primary`** à esquerda; abas com sublinhado de 3 px |
+| Navegação | `.sidebar`, `.topbar`, `.scrim`, `.tabs` | **Sidebar em todas as telas**, com ícone + rótulo. Celular: gaveta que desliza (200 ms) sobre um fundo escurecido; abre no botão ☰, fecha em "Recolher menu", no fundo ou com Esc. Desktop: fixa; "Recolher menu" a reduz a uma faixa de ícones de 56 px e a escolha é lembrada. Item ativo: fundo `--code-bg` e **régua de 3 px em `--primary`**. Abas com sublinhado de 3 px |
 | Tabela / lista | `.table`, `.plain`, `.kv` | Cabeçalho e chave em mono caixa-alta; no celular vira cartão |
 | Badge | `.badge` + `.st-*`, `.ds-*`, `.lv-*` | Contorno e texto na cor semântica; nunca só cor: sempre com texto ("no ar", "falhou") |
 | Alerta | `.flash` (`.ok`, `.err`, `.warn`) | Contorno semântico; `.err` também colore o texto |
@@ -138,7 +153,7 @@ Fora do painel hoje (nos prints, mas sem equivalente no droidpaas): seletor de o
 
 ## 9. Movimento
 
-Sem animação decorativa. Transições, se houver, de 120 ms (cor e borda), curva `ease-out`. `prefers-reduced-motion: reduce` desliga animação, transição e rolagem suave (já está no CSS).
+Sem animação decorativa. A única animação é a do sidebar: 200 ms, `ease-out` (deslize da gaveta, largura da faixa, margem do conteúdo e fundo escurecido). Ela só liga depois do primeiro toque, para a página não "pular" ao carregar. Demais transições, se houver, de 120 ms (cor e borda). `prefers-reduced-motion: reduce` desliga animação, transição e rolagem suave (já está no CSS).
 
 ## 10. Tom de voz
 
@@ -156,13 +171,13 @@ Português direto, verbo no infinitivo ou imperativo, sem exclamação e sem jar
 | Tipografia | Sans neo-grotesca tipo Inter/Geist (média, palpite) | Space Grotesk + IBM Plex Sans + IBM Plex Mono | Outra família, licença aberta; mono por consistência |
 | Raios | Cerca de 8 / 12 / 16–20 px (média) | 2 / 6 / 10 px | Mais anguloso e compacto |
 | Elevação | Só borda, sem sombra (alta) | Mantido (sem sombra), borda de campos mais forte | Mesma lógica, acessibilidade (3:1) nos campos |
-| Ícones | Outline fino 24 px, provável Lucide (média) | Lucide/Tabler, traço 1,75 px, **proposta** | Biblioteca aberta; ícones de serviço coloridos fora |
+| Ícones | Outline fino 24 px, provável Lucide (média) | Lucide via Iconify, embutido em sprite SVG | Biblioteca aberta, pedido do usuário; ícones de serviço coloridos fora |
 | Densidade | Compacta, texto de 13–14 px (média) | 14 px com mouse ≥ 900 px; 15 px e 44 px no toque | Celular é o uso principal |
 | Estado nos cards | Ponto verde no canto (alta) | **Régua de 3 px** na borda esquerda | Assinatura nº 1 |
 | Item ativo da nav | Fundo cinza (alta) | Fundo + **régua azul** de 3 px | Assinatura nº 2 |
 | Rótulos | Caixa-alta sans com tracking (média) | Caixa-alta **mono** 0,72 rem | Reforça o ar de terminal |
 | Layout | Sidebar com grupos, seletor de organização, breadcrumb (alta) | Sidebar simples sem grupos | Produto de um único usuário e dispositivo |
-| Mobile e tablet | Não existe nas referências | Layout atual do painel (proposto) | Derivado, não extraído |
+| Mobile e tablet | Não existe nas referências | Layout atual do painel, com sidebar em gaveta (proposto) | Derivado, não extraído |
 | Logo, nome, textos | Marca de terceiro | **Não usados** | Logo própria; textos próprios |
 
 Assinaturas: (1) régua de status à esquerda do card; (2) régua azul no item ativo e rótulos técnicos em mono caixa-alta.
