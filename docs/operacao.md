@@ -100,16 +100,20 @@ Limitações conhecidas: dependências nativas de npm/pip sem binário para Andr
 
 ## 4. Túnel e domínios (Cloudflare)
 
-O DroidPaaS sobe o `cloudflared` em **modo token**; você cria o túnel no painel da Cloudflare.
+O DroidPaaS sobe o `cloudflared` em **modo token**; você cria o túnel no painel da Cloudflare (validado com `dejesusdevts.com`).
 
-1. Zero Trust → Networks → Tunnels → crie um túnel e copie o **token**.
-2. Public hostname: `*.apps.seudominio.com` → `HTTP` → `127.0.0.1:18080` (se o painel recusar o wildcard, crie um hostname por app).
-3. No aparelho: `droid tunnel set --token <token>` (o token é guardado cifrado e entregue ao `cloudflared` por arquivo `0600`, nunca na linha de comando).
-4. Defina o domínio base: `droid settings set base_domain=apps.seudominio.com` — cada app ganha `<app>.apps.seudominio.com`.
+1. Zero Trust (`one.dash.cloudflare.com`) → Networks → Tunnels → Create a tunnel → Cloudflared. Copie só o **token** (a parte `eyJ…` do comando mostrado) e **não** rode os comandos da tela.
+2. No aparelho: `pkg install cloudflared` (se faltar) e `droid tunnel set --token <token>` (o token é guardado cifrado e entregue ao `cloudflared` por arquivo `0600`, nunca na linha de comando). `droid status` deve mostrar o túnel `connected`.
+3. De volta ao túnel → Routes → Add route → **Published application**, uma por hostname: subdomain (`painel`, `meu-app`…), domain, service `HTTP`, URL `127.0.0.1:18080` (a porta do Caddy).
+4. Proteja o painel **antes** de usá-lo: Access → Applications → Add → Self-hosted → Public DNS → hostname `painel.<domínio>` → política **Allow** só para o seu e-mail (login por código).
+5. `droid settings set base_domain=<domínio> panel_hostname=painel.<domínio>`. Cada app ganha `<app>.<domínio>`.
 
-`droid status` mostra o estado do túnel (`connected`/`connecting`/`down`). Para domínios fora do wildcard crie o hostname manualmente no túnel e use `droid domains APP add HOST`.
-
-Protegendo o painel/API: eles escutam só em `127.0.0.1`. Para acessá-los de fora use Tailscale ou um hostname do túnel protegido por **Cloudflare Access**. **Nunca** exponha a API sem autenticação extra e não exponha o `sshd` à internet.
+Notas:
+- **Wildcard × um hostname por app.** Se o domínio já tem outro uso (portfólio, e-mail), crie um hostname por app em vez de `*`: o wildcard também capturaria subdomínios que você ainda não cadastrou. Cada app novo exige uma rota nova no túnel.
+- **Certificado.** O certificado gratuito da Cloudflare cobre só um nível (`*.dominio.com`); `app.apps.dominio.com` exigiria plano pago. Por isso use o domínio raiz como `base_domain`.
+- Não crie app com o nome de um subdomínio que já existe no DNS (por exemplo `www`).
+- `droid status` mostra o estado do túnel (`connected`/`connecting`/`down`). Para um domínio extra de um app: rota no túnel + `droid domains APP add HOST`.
+- A API e o painel escutam só em `127.0.0.1`; o painel só é público pelo hostname protegido por Access. **Nunca** exponha a API sem autenticação extra e não exponha o `sshd` à internet. Os apps ficam públicos de propósito.
 
 ## 5. Backup e restauração
 

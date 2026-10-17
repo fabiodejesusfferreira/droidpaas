@@ -26,6 +26,8 @@
 | Instalação real atualizada (`droidd` reiniciado; Caddy e apps seguiram no ar) | ☑ `/login` 200, `/` 303, `droid settings` ok |
 | Verificação visual em desktop e em 360 px | ◐ feita no navegador do PC com dados de demonstração (sem rolagem horizontal, temas, htmx sob CSP); **não** repetida abrindo o painel real pelo navegador do celular |
 
+**Túnel público com domínio (RF-16, V-05 Parte B) — validado em 2026-10-17** com `dejesusdevts.com`: túnel nomeado `connected` no M22; rotas `painel.` e `ola.` (hostname a hostname, porque a raiz já serve um portfólio); `ola.dejesusdevts.com` responde 200 em ~0,3 s pela internet; `painel.` atrás de Cloudflare Access (302 para o login sem sessão; após login por código o painel abre com bateria, RAM e disco reais em navegador desktop). Cookie `Secure` atrás do túnel confirmado (`dp_login_csrf` com `Secure`). Primeiro deploy real (`git push` por SSH a partir do Termux): `succeeded` em 8 s. Pendente de confirmação visual: log de deploy ao vivo (SSE) pelo túnel — o Access impede a verificação automática; feita pelo usuário.
+
 Não coberto pelo roteiro automático (conferir à mão ao usar): AT-26 (rollback pelo botão) e AT-30 (remoção do app) estão nos testes de handler, mas não no `3-panel.sh`; wizard em 3 passos idem. Túnel/SSE pelo túnel nomeado segue dependendo do domínio na Cloudflare.
 
 

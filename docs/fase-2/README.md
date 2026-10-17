@@ -134,7 +134,7 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 | AT-11 reboot do aparelho | ⏳ exige instalação real (o PoC já validou o mecanismo: Termux:Boot + runsvdir) |
 | RNF-01/02 (`droidd` ≤ 40 MB e < 1 % CPU) | ✅ medido: 9,6 MB ocioso / 0 % (2A) e 18–19 MB com 4 apps + deploys (soak reduzido) |
 | Soak de 72 h sem mortes não intencionais (RNF-10) | ⏳ `scripts/soak/soak.sh` pronto e validado em escala reduzida; precisa de 72 h na instalação real |
-| RNF-16/túnel público com domínio (RF-16) | ⏳ o plumbing está testado; a validação ponta a ponta exige um domínio na Cloudflare |
+| RNF-16/túnel público com domínio (RF-16) | ☑ validado na Fase 3 (2026-10-17) com domínio na Cloudflare (ver docs/fase-3) |
 | Documentação mínima publicada; TSD atualizado | ✅ `docs/operacao.md`, TSD v0.3 |
 
 **Para fechar o gate** é preciso instalar de verdade no M22 (`sh scripts/install.sh`), rodar o soak por 72 h (`nohup bash scripts/soak/soak.sh &`, depois `python3 scripts/soak/summary.py`), fazer um reboot (AT-11) e, com um domínio, validar o túnel. Isso altera o `SVDIR` e o boot reais do aparelho, por isso depende de autorização explícita.
@@ -147,7 +147,7 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 
 **Soak de 72 h ⏳ em andamento:** iniciado em `2026-10-13T01:35Z` (22:35 em Brasília de 12/10), término previsto `2026-10-16T01:35Z`, com `scripts/soak/soak.sh` (apps `soaknode`, `soakpy`, `soakgo`, `soaksite`; deploy a cada 4 h, restart a cada 3 h, `kill -9` a cada 8 h). Saídas em `~/soak/` no aparelho; resumo com `python3 ~/droidpaas-src/scripts/soak/summary.py`. Aparelho na tomada (91 %, 37 °C no início).
 
-**Túnel público com domínio (RF-16) ⏳:** aguardando um domínio na Cloudflare.
+**Túnel público com domínio (RF-16) ☑:** validado na Fase 3 com `dejesusdevts.com` (ver docs/fase-3).
 
 ### Soak de 72 h — resultado (colhido em 2026-10-16)
 
