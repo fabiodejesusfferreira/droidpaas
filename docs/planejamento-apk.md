@@ -45,7 +45,7 @@ Pontos a verificar na implementação: detectar o Termux instalado (Android 11+ 
 
 - **Linguagem e dependências:** Java (ou Kotlin) usando só a API do Android, **sem bibliotecas externas**. Menos peso, build reproduzível mais fácil, revisão de segurança mais simples.
 - **`minSdk` 30** (Android 11, igual ao DroidPaaS) e `targetSdk` atual.
-- **Identificador do app:** definir antes do primeiro release (ele não muda depois). Sugestão: `dev.droidpaas.launcher`, ou um nome ligado a um domínio que você registre.
+- **Identificador do app (`applicationId`): `com.dejesusdevts.droidpaas`** (decidido). Segue a convenção do domínio invertido, com um domínio que o autor controla. Não muda depois do primeiro release.
 - **Nome e ícone:** "droidpaas" e o `icon-app` da pasta `assets/logo/`, conforme a [política de marca](../TRADEMARKS.md).
 - **Licença:** MIT para o código do app; nome e logo continuam reservados.
 - **Onde fica:** pasta `android/` neste repositório (projeto Gradle independente do módulo Go).
@@ -75,7 +75,18 @@ Pontos a verificar na implementação: detectar o Termux instalado (Android 11+ 
 
 Total: cerca de uma a duas semanas de trabalho, mais a espera do F-Droid.
 
-## 9. Riscos e perguntas em aberto
+## 9. Decisões
+
+| # | Decisão | Escolha |
+|---|---|---|
+| 1 | `applicationId` | `com.dejesusdevts.droidpaas` |
+| 2 | Fonte da instalação | **Versão marcada (tag)**, nunca a branch principal: app e servidor ficam em sincronia. O app guarda qual tag instalar e a atualiza a cada release. |
+| 3 | Botão *Parar* | **Fora da v1.** Parar o `droidd` não derruba os apps hospedados e confundiria. Fica *Iniciar* e *Reiniciar*. |
+| 4 | Atrito das duas permissões | Passo a passo **na própria tela** (3 passos numerados, com o comando copiável e o estado de cada permissão: feito ou pendente). Validar com uma pessoa que nunca usou o Termux antes do release. |
+| 5 | Ordem de distribuição | 1º GitHub Releases; 2º F-Droid, só depois de haver usuários e um release estável; Play Store fora. |
+| 6 | Assinatura | Chave de lançamento **fora do repositório**, com **dois backups** em lugares diferentes (gerenciador de senhas e mídia offline). Perdê-la impede atualizações do mesmo app. |
+
+## 10. Riscos e perguntas em aberto
 
 - A experiência depende de **duas permissões manuais** (Termux e Android). É o maior atrito; vale testar se um passo a passo na própria tela basta.
 - Mudanças do Android em serviços em segundo plano ou nas regras de WebView podem exigir ajustes.
