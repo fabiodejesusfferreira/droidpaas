@@ -32,8 +32,7 @@ R=$(login_panel)
 contains "login redireciona" "HTTP/1.1 303" "$R"
 contains "cookie HttpOnly+SameSite=Lax" "HttpOnly; SameSite=Lax" "$(printf '%s' "$R" | grep -i '^set-cookie: dp_session')"
 R=$(curl -s -i -c /dev/null --data-urlencode username=admin --data-urlencode password=errada $P/login | head -1); contains "login sem token CSRF é recusado" " 403" "$R"
-for i in 1 2 3 4 5; do curl -s -o /dev/null -c "$E2E_HOME/j2.txt" $P/login; t=$(grep -o 'dp_login_csrf.*' "$E2E_HOME/j2.txt" | awk '{print $2}'); done
-FAILS=0; for i in 1 2 3 4 5 6; do
+for i in 1 2 3 4 5 6; do
   J=$E2E_HOME/j3.txt; rm -f $J
   tk=$(curl -s -c $J $P/login | grep -o 'name="_csrf" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')
   c=$(curl -s -o /dev/null -w '%{http_code}' -b $J -c $J --data-urlencode "_csrf=$tk" --data-urlencode username=intruso --data-urlencode password=errada $P/login); LAST=$c
@@ -63,19 +62,18 @@ check "Origin externo → 403" 403 "$(pc -o /dev/null -w '%{http_code}' -X POST 
 check "token certo → 303" 303 "$(pc -o /dev/null -w '%{http_code}' -X POST --data-urlencode "_csrf=$TOK" $P/apps/blog/action/restart)"
 
 say "deploy pelo git → painel mostra o log (AT-22/AT-23)"
-newapp pnl "$W/web"; git -C "$W/web" remote set-url origin "$E2E_HOME/home/apps/pnl/repo.git"
+newapp pnl "$W/web"
 api POST /apps/pnl/domains '{"hostname":"pnl.test.dev"}' >/dev/null
 api PATCH /apps/pnl '{"health_path":"/health"}' >/dev/null
-nodeapp v1; git -C "$W/web" add -A; git -C "$W/web" -c user.name=e -c user.email=e@e commit -qm v1
-# o hook do repo foi removido pelo helper newapp; o deploy sai pelo botão do painel
+nodeapp v1
 TOK=$(csrf)
 LOC=$(pc -o /dev/null -w '%{redirect_url}' -X POST --data-urlencode "_csrf=$TOK" $P/apps/pnl/deployments)
 contains "botão Deploy sem commits: erro amigável" "/apps/pnl/deployments" "$LOC"
 contains "mensagem de ref inexistente" "não existe no repositório" "$(pc $P/apps/pnl/deployments)"
-git -C "$W/web" push -q origin main
+publish "$W/web" v1
 LOC=$(pc -o /dev/null -w '%{redirect_url}' -X POST --data-urlencode "_csrf=$TOK" $P/apps/pnl/deployments)
 contains "redireciona para o deploy" "/apps/pnl/deployments/1" "$LOC"
-LIVE=$(pc "$LOC"); contains "página tem visualizador ao vivo ou log" "-----" "$LIVE"
+LIVE=$(pc "$LOC"); contains "página do deploy tem o visualizador de log" "data-log" "$LIVE"
 for _ in $(seq 1 60); do s=$(api GET /deploys/1 | jget status); [ "$s" = running ] || [ "$s" = queued ] || break; sleep 1; done
 check "deploy concluído" succeeded "$s"
 PG=$(pc $P/apps/pnl/deployments/1)
@@ -83,7 +81,8 @@ contains "log do deploy no HTML" "-----&gt; finalize" "$PG"
 contains "badge concluído" "concluído" "$PG"
 wait_until 20 '[ "$(at pnl.test.dev /)" = v1 ]'
 check "app servido" v1 "$(at pnl.test.dev / | tr -d '\n')"
-contains "painel mostra app no ar" "no ar" "$(pc $P/apps/pnl)"
+wait_until 15 'pc $P/apps/pnl | grep -q "no ar"'
+APPPG=$(pc $P/apps/pnl); contains "painel mostra app no ar" "no ar" "$APPPG" || printf '%s\n' "$APPPG" | grep -i "badge\|state" | head -5
 wait_until 40 'pc $P/ | grep -q "KB\|MB · "'
 contains "recursos (RSS) do app no dashboard" " · " "$(pc $P/fragments/apps)"
 
@@ -96,7 +95,7 @@ contains "download dos logs" "ao-vivo-do-painel" "$(pc "$P/apps/pnl/logs/downloa
 
 say "variáveis de ambiente pelo painel (AT-24)"
 TOK=$(csrf)
-pc -o /dev/null -X POST --data-urlencode "_csrf=$TOK" --data-urlencode k=SEGREDO --data-urlencode v=valor-super-secreto --data-urlencode sab=1 --data-urlencode restart=1 $P/apps/pnl/environment
+pc -o /dev/null -X POST --data-urlencode "_csrf=$TOK" --data-urlencode k=SEGREDO --data-urlencode v=valor-super-secreto --data-urlencode saa=1 --data-urlencode restart=1 $P/apps/pnl/environment
 ENV=$(pc $P/apps/pnl/environment); contains "segredo mascarado no HTML" "••••" "$ENV"
 case "$ENV" in *valor-super-secreto*) bad "segredo vazou no HTML";; *) ok "segredo não vazou";; esac
 REV=$(pc -X POST -H 'HX-Request: true' --data-urlencode "_csrf=$TOK" --data-urlencode key=SEGREDO $P/apps/pnl/environment/reveal); contains "revelar (htmx)" "valor-super-secreto" "$REV"
@@ -107,9 +106,12 @@ say "painel por hostname atrás do Caddy: cookie Secure com X-Forwarded-Proto (t
 api PUT /settings '{"panel_hostname":"painel.test.dev"}' >/dev/null
 wait_until 20 '[ "$(atcode painel.test.dev /login)" = 200 ]'
 check "painel via Caddy (Host)" 200 "$(atcode painel.test.dev /login)"
-rm -f "$JAR"
-tok=$(curl -s -c "$JAR" -H "Host: painel.test.dev" -H "X-Forwarded-Proto: https" "http://$PROXY/login" | grep -o 'name="_csrf" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')
-R=$(curl -s -i -b "$JAR" -c "$JAR" -H "Host: painel.test.dev" -H "X-Forwarded-Proto: https" -H "Origin: https://painel.test.dev" --data-urlencode "_csrf=$tok" --data-urlencode username=admin --data-urlencode "password=$PW" "http://$PROXY/login")
+# o libcurl recente ignora cookies Secure recebidos por http: lê os Set-Cookie dos cabeçalhos e reenvia à mão
+XF=(-H "Host: painel.test.dev" -H "X-Forwarded-Proto: https")
+cookies() { awk 'tolower($1)=="set-cookie:" {sub(/;.*/,"",$2); printf "%s%s", sep, $2; sep="; "}' ; }
+H1=$(curl -s -i "${XF[@]}" "http://$PROXY/login"); tok=$(printf '%s' "$H1" | grep -o 'name="_csrf" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')
+contains "cookie de login é Secure atrás do proxy confiável" "Secure" "$(printf '%s' "$H1" | grep -i '^set-cookie: dp_login_csrf')"
+R=$(curl -s -i -H "Cookie: $(printf '%s' "$H1" | tr -d '\r' | cookies)" "${XF[@]}" -H "Origin: https://painel.test.dev" --data-urlencode "_csrf=$tok" --data-urlencode username=admin --data-urlencode "password=$PW" "http://$PROXY/login")
 contains "login via Caddy" "HTTP/1.1 303" "$R"
 contains "cookie Secure atrás do proxy confiável" "Secure" "$(printf '%s' "$R" | grep -i '^set-cookie: dp_session')"
 

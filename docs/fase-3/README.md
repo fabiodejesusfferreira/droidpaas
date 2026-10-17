@@ -19,12 +19,15 @@
 | Testes de handlers e de segurança (CSRF, auth, rate limit, escape de log, i18n, contraste) | ☑ `go vet` + `go test ./...` verdes |
 | Nenhum recurso externo (CSP `default-src 'self'`, sem inline) | ☑ por teste e inspeção no navegador |
 | Layout 360 px e tema claro/escuro (PC, emulação) | ☑ |
-| AT-20…AT-30 **no M22** e RNF-04 (dashboard p95 ≤ 300 ms na LAN) | ☐ roteiro pronto em `test/e2e/3-panel.sh`; **não executado** — aparelho inacessível na rede no momento (192.168.1.4 sem rota) |
-| Validação do golden do Caddy (`trusted_proxies`) com Caddy real | ☐ `go test -tags termux -run Golden ./internal/proxy` no aparelho |
-| Regressão das suítes `2d…2i` com o `droidd` novo | ☐ no aparelho |
-| TSD v0.4 | ☑ |
+| Painel no M22 (`test/e2e/3-panel.sh`, sandbox com runit/Caddy/git reais): login/logout/sessão, CSRF (sem token, token errado, Origin externo), limite de login (429), cookie `Secure` atrás do Caddy, dashboard com bateria/RAM/disco reais, deploy pelo painel com log, env com segredo mascarado + reveal + reinício, logs de runtime por SSE | ☑ 44 ok, 0 falhas |
+| RNF-04 — dashboard no M22 (30 requisições, LAN, loopback do aparelho) | ☑ mediana 36 ms · **p95 42 ms** (meta ≤ 300 ms); página do app p95 28 ms |
+| Golden do Caddy (`trusted_proxies`) com Caddy real | ☑ `TestGoldenValidatesWithRealCaddy` passa no aparelho |
+| Regressão `2d…2i` com o `droidd` novo | ☑ 9 + 22 + 29 + 24 + 44 + 26 ok, 0 falhas (`make e2e` agora inclui `3-panel`) |
+| Instalação real atualizada (`droidd` reiniciado; Caddy e apps seguiram no ar) | ☑ `/login` 200, `/` 303, `droid settings` ok |
+| Verificação visual em desktop e em 360 px | ◐ feita no navegador do PC com dados de demonstração (sem rolagem horizontal, temas, htmx sob CSP); **não** repetida abrindo o painel real pelo navegador do celular |
 
-Para fechar o gate, com o aparelho online: sincronize o código, rode `make e2e` (inclui `3-panel.sh`) e anexe a saída aqui.
+Não coberto pelo roteiro automático (conferir à mão ao usar): AT-26 (rollback pelo botão) e AT-30 (remoção do app) estão nos testes de handler, mas não no `3-panel.sh`; wizard em 3 passos idem. Túnel/SSE pelo túnel nomeado segue dependendo do domínio na Cloudflare.
+
 
 ## Decisões
 
