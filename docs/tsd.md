@@ -3,7 +3,7 @@
 | Campo | Valor |
 |---|---|
 | **Projeto** | DroidPaaS (nome provisório) |
-| **Versão do documento** | 0.3 — Fase 2 concluída (gate fechado em 2026-10-16) |
+| **Versão do documento** | 0.4 — Fase 3 implementada (aceitação no aparelho pendente) |
 | **Data** | 2026-10-13 (v0.1: 2026-10-09) |
 | **Escopo deste documento** | Fases 1, 2 e 3 (Prova de Conceito, MVP sem painel, Painel web) |
 | **Dispositivo-alvo de referência** | Samsung Galaxy M22, 4 GB de RAM (aparelho de testes/sandbox) |
@@ -17,6 +17,7 @@
 | Versão | Data | Mudanças |
 |---|---|---|
 | 0.1 | 2026-10-09 | Rascunho inicial |
+| 0.4 | 2026-10-16 | Fase 3 implementada (§12): mux único (API + painel); sessões na tabela `sessions` (SHA-256 do token; 12 h ociosa/7 d); CSRF por sessão + Origin; `trusted_proxies` (loopback) no Caddy para cookie `Secure` atrás do túnel; `/system` com JSON do dispositivo; `GET /apps/{name}/stats`; sem WebSocket (SSE); CLI `droid settings`. AT-20…30 no M22 e RNF-04 pendentes de execução do `test/e2e/3-panel.sh` |
 | 0.3 | 2026-10-13 | Fase 2 implementada (§16.2.1): `chpst` não executa scripts com shebang (A.1 usa `sh start.sh`); codificação do envdir; migrações 0002–0004; endpoints `/releases`, `/backup`, `/system`, Git HTTP; `git-shell`/`hook` com `--home`/`--socket`; Q-01, Q-04, Q-05, Q-07, Q-08, Q-10 decididas |
 | 0.2 | 2026-10-12 | Resultados da Fase 1 (§2.5); portas padrão do proxy `18080`/Admin `12019`; `nice` best-effort; `/proc/stat` removido das métricas; boot em arquivo próprio; token do túnel via `TUNNEL_TOKEN`/`--token-file`; Q-02, Q-03 e Q-09 decididas/parciais |
 

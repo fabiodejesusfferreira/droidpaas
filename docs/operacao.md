@@ -1,6 +1,6 @@
-# DroidPaaS — instalação e operação (Fase 2)
+# DroidPaaS — instalação e operação (Fases 2 e 3)
 
-Guia para instalar o DroidPaaS num aparelho Android com Termux e usá-lo pela CLI `droid` e pela API. O painel web chega na Fase 3.
+Guia para instalar o DroidPaaS num aparelho Android com Termux e usá-lo pela CLI `droid` e pela API. O painel web (§3.1) é opcional: tudo o que ele faz também sai pela CLI.
 
 > **Aviso:** todos os apps rodam sob o mesmo usuário do Termux, **sem isolamento entre eles**. Hospede só código em que você confia.
 
@@ -70,6 +70,16 @@ droid apps rm minha-api --yes
 
 Também dá para dar push por HTTP (sem SSH): `git remote add droid http://u:<token-git>@<painel>/git/minha-api.git`, com um token criado por `droid tokens create ci --scope git`.
 
+### 3.1 Painel web
+
+Abra `http://127.0.0.1:8090` no aparelho (ou o hostname do painel, veja §4) e entre com o usuário/senha do admin criados no `droidd init`. Sessão: 12 h sem uso, 7 dias no máximo; cinco senhas erradas seguidas bloqueiam o login por alguns minutos.
+
+- **Início:** apps com estado, RAM/CPU, e o card do aparelho (bateria, temperatura, RAM, disco; exige `termux-api`, senão aparece "indisponível").
+- **Novo app:** assistente em 3 passos (nome, domínio, variáveis) que mostra a URL do `git remote` para copiar.
+- **Página do app:** visão geral, deploys (log ao vivo, cancelar, rollback), variáveis (segredos mascarados; "Salvar e reiniciar"), logs de runtime ao vivo (filtro, pausa, download), domínios e configurações (apagar exige digitar o nome).
+- **Configurações:** domínio base, hostname do painel, retenção, token do túnel, chaves SSH, tokens de API, troca de senha e eventos.
+- O painel não carrega nada de fora (sem CDN) e funciona em telas de 360 px, nos temas claro e escuro. Atrás do túnel, proteja-o também com Cloudflare Access.
+
 ### O que o deploy detecta
 
 `droidpaas.toml` (opcional, na raiz do repositório) > `Procfile` > convenções:
@@ -95,7 +105,7 @@ O DroidPaaS sobe o `cloudflared` em **modo token**; você cria o túnel no paine
 1. Zero Trust → Networks → Tunnels → crie um túnel e copie o **token**.
 2. Public hostname: `*.apps.seudominio.com` → `HTTP` → `127.0.0.1:18080` (se o painel recusar o wildcard, crie um hostname por app).
 3. No aparelho: `droid tunnel set --token <token>` (o token é guardado cifrado e entregue ao `cloudflared` por arquivo `0600`, nunca na linha de comando).
-4. Defina o domínio base: `PUT /api/v1/settings {"base_domain":"apps.seudominio.com"}` — cada app ganha `<app>.apps.seudominio.com`.
+4. Defina o domínio base: `droid settings set base_domain=apps.seudominio.com` — cada app ganha `<app>.apps.seudominio.com`.
 
 `droid status` mostra o estado do túnel (`connected`/`connecting`/`down`). Para domínios fora do wildcard crie o hostname manualmente no túnel e use `droid domains APP add HOST`.
 
