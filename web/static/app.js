@@ -32,6 +32,7 @@
   document.querySelectorAll("[data-log]").forEach(function (box) {
     var out = box.querySelector("[data-out]"), follow = box.querySelector("[data-follow]"), filter = box.querySelector("[data-filter]"), status = box.querySelector("[data-status]");
     var lines = [], reload = box.getAttribute("data-reload-on-end") === "1";
+    var tx = function (k, d) { return box.getAttribute("data-t-" + k) || d; };
     function setStatus(s) { if (status) status.textContent = s; }
     function render() {
       var q = filter && filter.value ? filter.value.toLowerCase() : "";
@@ -41,16 +42,16 @@
     if (filter) filter.addEventListener("input", render);
     // rolar para cima pausa o "seguir"
     out.addEventListener("scroll", function () { if (follow && out.scrollTop + out.clientHeight < out.scrollHeight - 40) follow.checked = false; });
-    setStatus("conectando…");
+    setStatus(tx("connecting", "…"));
     var es = new EventSource(box.getAttribute("data-src"));
-    es.onopen = function () { setStatus("ao vivo"); };
+    es.onopen = function () { setStatus(tx("live", "")); };
     es.addEventListener("line", function (e) {
       var d = JSON.parse(e.data), t = String(d.text).replace(ansi, "");
       lines.push(d.ts ? d.ts + " " + t : t);
       if (lines.length > MAX) lines.splice(0, lines.length - MAX);
       render();
     });
-    es.addEventListener("end", function () { es.close(); setStatus("encerrado"); if (reload) setTimeout(function () { location.reload(); }, 600); });
-    es.onerror = function () { setStatus("reconectando…"); }; // o EventSource reconecta sozinho com Last-Event-ID
+    es.addEventListener("end", function () { es.close(); setStatus(tx("ended", "")); if (reload) setTimeout(function () { location.reload(); }, 600); });
+    es.onerror = function () { setStatus(tx("reconnecting", "…")); }; // o EventSource reconecta sozinho com Last-Event-ID
   });
 })();

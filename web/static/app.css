@@ -1,7 +1,7 @@
 /* DroidPaaS — CSS único, escrito à mão (TSD §12.5). Mobile-first; tema claro/escuro por variáveis. */
 :root {
   --bg: #f6f7f9; --surface: #fff; --text: #14181f; --muted: #5b6573; --border: #d9dee6;
-  --primary: #0b5fff; --primary-text: #fff; --danger: #b3261e; --ok: #1a7f37; --warn: #8a5a00;
+  --primary: #0b5fff; --primary-text: #fff; --danger: #b3261e; --ok: #17722f; --warn: #8a5a00;
   --focus: #0b5fff; --code-bg: #eef1f5; --log-bg: #0f141b; --log-text: #d6deeb; --shadow: 0 1px 2px rgba(0,0,0,.06);
   --radius: 10px; --nav-w: 220px;
   color-scheme: light;
@@ -56,6 +56,7 @@ input:not([type=checkbox]), select, textarea { width: 100%; min-height: 44px; pa
 input[type=checkbox] { width: 1.3rem; height: 1.3rem; accent-color: var(--primary); }
 input[readonly] { background: var(--code-bg); }
 .panel, .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; box-shadow: var(--shadow); margin: 0 0 1rem; }
+.panel > h2:first-child, .panel > h3:first-child { margin-top: 0; }
 .panel.danger { border-color: var(--danger); } .panel.secret { border-color: var(--ok); }
 .cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); } .card h3 { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .grid2 { display: grid; gap: 1rem; grid-template-columns: 1fr; } @media (min-width: 760px) { .grid2 { grid-template-columns: 1fr 1fr; } }
@@ -63,6 +64,7 @@ input[readonly] { background: var(--code-bg); }
 @media (max-width: 480px) { .kv > div { grid-template-columns: 1fr; gap: 0; } }
 .apphead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: .75rem; } .apphead h1 { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; } .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .tabs { display: flex; gap: .25rem; overflow-x: auto; border-bottom: 1px solid var(--border); margin: .5rem 0 1rem; -webkit-overflow-scrolling: touch; }
+.tabs { scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; }
 .tabs a { padding: .6rem .9rem; min-height: 44px; white-space: nowrap; text-decoration: none; color: var(--muted); border-bottom: 3px solid transparent; }
 .tabs a[aria-current="page"] { color: var(--text); border-bottom-color: var(--primary); font-weight: 600; }
 .badge { display: inline-block; padding: .1rem .55rem; border-radius: 999px; border: 1px solid var(--border); font-size: .8rem; font-weight: 600; background: var(--code-bg); }

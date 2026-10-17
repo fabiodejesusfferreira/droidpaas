@@ -670,3 +670,49 @@ func first(vals ...string) string {
 	}
 	return ""
 }
+
+func (c *cli) settings(args []string) error {
+	api, err := c.api()
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	if len(args) > 0 {
+		if args[0] != "set" || len(args) < 2 {
+			return usageErr("uso: droid settings [set CHAVE=VALOR...]")
+		}
+		in := map[string]string{}
+		for _, kv := range args[1:] {
+			k, v, ok := strings.Cut(kv, "=")
+			if !ok || k == "" {
+				return usageErr("use CHAVE=VALOR (recebi %q)", kv)
+			}
+			in[k] = v
+		}
+		if err := api.Do(ctx, "PUT", "/settings", in, nil); err != nil {
+			return err
+		}
+		fmt.Fprintln(c.out, "configurações salvas")
+		return nil
+	}
+	var out struct {
+		Settings         map[string]string `json:"settings"`
+		TunnelConfigured bool              `json:"tunnel_configured"`
+	}
+	if err := api.Do(ctx, "GET", "/settings", nil, &out); err != nil {
+		return err
+	}
+	if c.json {
+		return c.printJSON(out)
+	}
+	keys := make([]string, 0, len(out.Settings))
+	for k := range out.Settings {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		fmt.Fprintf(c.out, "%s=%s\n", k, out.Settings[k])
+	}
+	fmt.Fprintf(c.out, "tunnel_configured=%v\n", out.TunnelConfigured)
+	return nil
+}

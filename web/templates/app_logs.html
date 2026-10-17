@@ -1,7 +1,7 @@
 {{define "content"}}
 {{template "app_head" (dict "P" .Data.AppPage "CSRF" .CSRF)}}
 {{with .Data}}
-<div class="logview" data-log data-src="/apps/{{.App.Name}}/logs/stream">
+<div class="logview" data-log data-t-connecting="{{t "logs.connecting"}}" data-t-live="{{t "logs.live"}}" data-t-ended="{{t "logs.ended"}}" data-t-reconnecting="{{t "logs.reconnecting"}}" data-src="/apps/{{.App.Name}}/logs/stream">
   {{template "logbar" (dict "Download" (printf "/apps/%s/logs/download" .App.Name))}}
   <pre class="log" tabindex="0" aria-label="{{t "logs.label"}}" data-out></pre>
   <noscript><pre class="log">{{.Initial}}</pre></noscript>

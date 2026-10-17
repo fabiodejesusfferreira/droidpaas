@@ -12,7 +12,7 @@
 {{if .Live}}
 <form method="post" action="/apps/{{.App.Name}}/deployments/{{.D.ID}}/cancel" class="inline" data-confirm="{{t "deploys.cancel.confirm"}}">
   {{template "csrf" $.CSRF}}<button class="btn" type="submit">{{t "deploys.cancel"}}</button></form>
-<div class="logview" data-log data-src="/apps/{{.App.Name}}/deployments/{{.D.ID}}/stream" data-reload-on-end="1">
+<div class="logview" data-log data-t-connecting="{{t "logs.connecting"}}" data-t-live="{{t "logs.live"}}" data-t-ended="{{t "logs.ended"}}" data-t-reconnecting="{{t "logs.reconnecting"}}" data-src="/apps/{{.App.Name}}/deployments/{{.D.ID}}/stream" data-reload-on-end="1">
   {{template "logbar" (dict "Download" "")}}
   <pre class="log" tabindex="0" aria-label="{{t "logs.label"}}" data-out></pre>
 </div>

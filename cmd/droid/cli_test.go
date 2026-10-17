@@ -246,3 +246,19 @@ func TestTunnelAndBackup(t *testing.T) {
 		t.Fatalf("%v", st)
 	}
 }
+
+func TestSettingsCommand(t *testing.T) {
+	setup(t)
+	droid(t, "", "settings").ok(t).has(t, "base_domain=", "keep_releases=5", "git_http_enabled=true", "tunnel_configured=false")
+	droid(t, "", "settings", "set", "base_domain=apps.exemplo.com", "keep_releases=3").ok(t).has(t, "salvas")
+	droid(t, "", "settings").ok(t).has(t, "base_domain=apps.exemplo.com", "keep_releases=3")
+	if r := droid(t, "", "settings", "set", "keep_releases=0"); r.code != 1 || !strings.Contains(r.err, "keep_releases") {
+		t.Fatalf("%+v", r)
+	}
+	if r := droid(t, "", "settings", "set", "semigual"); r.code != 2 {
+		t.Fatalf("%+v", r)
+	}
+	if r := droid(t, "", "settings", "oque"); r.code != 2 {
+		t.Fatalf("%+v", r)
+	}
+}

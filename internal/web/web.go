@@ -85,6 +85,7 @@ func (s *Server) Routes(mux *http.ServeMux) {
 		w.Header().Set("Cache-Control", "public, max-age=3600")
 		s.static.ServeHTTP(w, r)
 	})
+	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) }) // o ícone é o SVG do <link>
 	mux.HandleFunc("GET /login", pub(s.loginForm))
 	mux.HandleFunc("POST /login", pub(s.loginSubmit))
 	mux.HandleFunc("POST /logout", au(s.logout))
