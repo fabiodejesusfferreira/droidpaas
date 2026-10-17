@@ -50,9 +50,15 @@ var ptBR = map[string]string{
 	"wizard.err.name":    "Nome inválido: use letras minúsculas, números e hífen (2 a 31 caracteres, começando por letra).",
 	"wizard.err.runtime": "Runtime inválido.", "wizard.created": "App %q criado.",
 	"runtime.auto": "Automático", "runtime.node": "Node.js", "runtime.python": "Python", "runtime.go": "Go", "runtime.static": "Site estático", "runtime.custom": "Personalizado (Procfile)",
-	"publish.intro": "App criado. Conecte seu repositório e publique:", "publish.ssh": "Por SSH", "publish.http": "Por HTTP",
+	"publish.intro": "App criado. Falta enviar o código. Siga os passos abaixo:", "publish.ssh": "Por SSH", "publish.http": "Por HTTP",
 	"publish.http.help": "(use um token com escopo git como senha)", "publish.watch": "O build e o deploy aparecem no próprio terminal do git push.",
 	"publish.open": "Abrir o app",
+	"publish.s1":   "Cadastre sua chave SSH (uma vez só)", "publish.s1.body": "No computador de onde vai enviar o código, mostre a chave pública e cole em Configurações → Chaves. Se ela não existir, crie com ssh-keygen -t ed25519.",
+	"publish.s1.link": "Abrir Configurações → Chaves", "publish.s2": "Envie o código com git push", "publish.s2.body": "No terminal do seu computador, dentro da pasta do projeto (que precisa ser um repositório git com pelo menos um commit):",
+	"publish.ip": "Troque IP-DO-CELULAR pelo endereço do aparelho na rede (Wi-Fi → detalhes da rede, ou ifconfig no Termux). Você abriu o painel por localhost, por isso o endereço real não aparece aqui.",
+	"publish.s3": "Acompanhe o deploy", "publish.s3.body": "O build roda no aparelho e o log aparece no terminal do git push. Também dá para ver em Deploys, pelo painel. Se o build passar e o app responder, ele entra no ar; se falhar, a versão anterior continua no ar.",
+	"publish.s4": "O que o seu app precisa ter", "publish.s4.body": "Node: um package.json com o script start. Python: requirements.txt e um Procfile com web:. Go: go.mod. Site estático: index.html. O servidor deve escutar em HOST e PORT (variáveis de ambiente) e, de preferência, responder 200 em /health.",
+	"publish.s5": "Abrir o app", "publish.s5.body": "Depois do deploy, o app responde em:", "publish.s5.nodomain": "Ainda não há domínio. Cadastre um em Domínios, ou defina o domínio base em Configurações.",
 
 	// visão geral e ações
 	"overview.release": "Release atual", "overview.commit": "Commit", "overview.when": "Quando", "overview.resources": "Recursos",

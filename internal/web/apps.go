@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -139,12 +140,26 @@ type publishData struct {
 	Domain          string
 }
 
+// gitURLs devolve as URLs de push; aberto por localhost/127.0.0.1 o host não serve para quem está em outra máquina,
+// então vira um marcador que a página explica como trocar (e o HTTP, só alcançável pelo hostname do painel, some).
+func (s *Server) gitURLs(c *ctx, name string) (ssh, httpURL string) {
+	ssh, httpURL = s.API.GitURLs(c.r, name)
+	host, _, err := net.SplitHostPort(c.r.Host)
+	if err != nil {
+		host = c.r.Host
+	}
+	if ip := net.ParseIP(host); host == "localhost" || (ip != nil && ip.IsLoopback()) {
+		ssh, httpURL = strings.Replace(ssh, "@"+host+":", "@IP-DO-CELULAR:", 1), ""
+	}
+	return
+}
+
 func (s *Server) appPublish(c *ctx) {
 	a, ok := c.app()
 	if !ok {
 		return
 	}
-	ssh, httpURL := s.API.GitURLs(c.r, a.Name)
+	ssh, httpURL := s.gitURLs(c, a.Name)
 	keys, _ := s.API.Store.SSHKeys(c.r.Context())
 	ds, _ := s.API.Store.Domains(c.r.Context(), a.ID)
 	dom := ""
@@ -225,7 +240,7 @@ func (s *Server) appOverview(c *ctx) {
 		return
 	}
 	rows, _, _ := s.deployRows(c, a, 5, 0)
-	ssh, httpURL := s.API.GitURLs(c.r, a.Name)
+	ssh, httpURL := s.gitURLs(c, a.Name)
 	v := c.view(a.Name, "apps")
 	v.Data = overviewData{AppPage: s.appPageBase(c, a, "overview"), SSHURL: ssh, HTTPURL: httpURL, Deploys: rows}
 	c.render(http.StatusOK, "app_overview", v)

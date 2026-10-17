@@ -139,7 +139,7 @@ func TestWizardCreatesApp(t *testing.T) { // AT-22
 		t.Fatalf("%d %q\n%s", r.StatusCode, r.loc(), r.Body)
 	}
 	pub := c.get(r.loc())
-	pub.has(t, "App criado", "git remote add droid ssh://", ":8022/minha-api.git", "git push droid main", "/git/minha-api.git", "App &#34;minha-api&#34; criado")
+	pub.has(t, "App criado", "git remote add droid ssh://", ":8022/minha-api.git", "git push droid main", "@IP-DO-CELULAR:8022", "Cadastre sua chave SSH", "Acompanhe o deploy", "App &#34;minha-api&#34; criado")
 	a, err := p.env.Srv.Apps.Get(t.Context(), "minha-api")
 	if err != nil || a.Runtime != "node" || a.BuildCmd == nil || *a.BuildCmd != "npm run build" || a.HealthPath == nil || *a.HealthPath != "/health" {
 		t.Fatalf("%+v %v", a, err)

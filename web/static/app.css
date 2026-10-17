@@ -73,7 +73,7 @@ input[readonly] { background: var(--code-bg); }
 .flashes { display: grid; gap: .5rem; margin-bottom: .5rem; } .flash { margin: 0; padding: .7rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); }
 .flash.ok { border-color: var(--ok); } .flash.err { border-color: var(--danger); color: var(--danger); } .flash.warn { border-color: var(--warn); } .err-text { color: var(--danger); }
 .empty { text-align: center; padding: 2rem 1rem; }
-.steps { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; padding-left: 1.2rem; color: var(--muted); } .steps [aria-current="step"] { color: var(--text); font-weight: 700; }
+.steps { display: flex; flex-direction: column; gap: .35rem; padding-left: 1.4rem; margin: .5rem 0 1.25rem; color: var(--muted); } .steps [aria-current="step"] { color: var(--text); font-weight: 700; }
 .plain { list-style: none; padding: 0; margin: 0 0 1rem; } .plain li { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .4rem 0; border-bottom: 1px solid var(--border); }
 .howto li { margin-bottom: 1rem; } .cmd, pre.log { margin: .5rem 0; padding: .8rem 1rem; overflow-x: auto; border-radius: 8px; }
 .cmd { background: var(--code-bg); }

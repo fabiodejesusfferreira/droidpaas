@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"html/template"
+	"strings"
 	"time"
 )
 
@@ -34,7 +35,8 @@ func (s *Server) funcs() template.FuncMap {
 			}
 			return agoSince(s.Now(), time.UnixMilli(ms))
 		},
-		"idx": formIndex,
-		"add": func(a, b int) int { return a + b },
+		"idx":      formIndex,
+		"add":      func(a, b int) int { return a + b },
+		"contains": strings.Contains,
 	}
 }
