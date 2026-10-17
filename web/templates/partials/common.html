@@ -1,0 +1,46 @@
+{{define "flashes"}}<div class="flashes" role="status" aria-live="polite">{{range .Flash}}<p class="flash {{.Kind}}">{{.Msg}}</p>{{end}}</div>{{end}}
+
+{{define "state_badge"}}<span class="badge st-{{.}}">{{t (printf "state.%s" .)}}</span>{{end}}
+
+{{define "deploy_badge"}}<span class="badge ds-{{.}}">{{t (printf "dstatus.%s" .)}}</span>{{end}}
+
+{{define "csrf"}}<input type="hidden" name="_csrf" value="{{.}}">{{end}}
+
+{{define "app_tabs"}}
+<nav class="tabs" aria-label="{{t "tabs.label"}}">
+  {{$n := .App.Name}}{{$t := .Tab}}
+  <a href="/apps/{{$n}}"{{if eq $t "overview"}} aria-current="page"{{end}}>{{t "tabs.overview"}}</a>
+  <a href="/apps/{{$n}}/deployments"{{if eq $t "deployments"}} aria-current="page"{{end}}>{{t "tabs.deployments"}}</a>
+  <a href="/apps/{{$n}}/environment"{{if eq $t "environment"}} aria-current="page"{{end}}>{{t "tabs.environment"}}</a>
+  <a href="/apps/{{$n}}/logs"{{if eq $t "logs"}} aria-current="page"{{end}}>{{t "tabs.logs"}}</a>
+  <a href="/apps/{{$n}}/domains"{{if eq $t "domains"}} aria-current="page"{{end}}>{{t "tabs.domains"}}</a>
+  <a href="/apps/{{$n}}/settings"{{if eq $t "settings"}} aria-current="page"{{end}}>{{t "tabs.settings"}}</a>
+</nav>
+{{end}}
+
+{{define "app_head"}}
+{{$a := .P.App}}{{$csrf := .CSRF}}
+<div class="apphead">
+  <div>
+    <h1>{{$a.Name}} {{template "state_badge" .P.Card.State}}</h1>
+    {{if .P.Card.URL}}<p class="muted"><a href="{{.P.Card.URL}}" rel="noopener noreferrer">{{.P.Card.URL}}</a></p>{{end}}
+  </div>
+  <div class="actions">
+    <a class="btn primary" href="/apps/{{$a.Name}}/deployments">{{t "action.deploy"}}</a>
+    <form method="post" action="/apps/{{$a.Name}}/action/restart" class="inline">{{template "csrf" $csrf}}<button class="btn" type="submit">{{t "action.restart"}}</button></form>
+    {{if eq $a.DesiredState "stopped"}}
+    <form method="post" action="/apps/{{$a.Name}}/action/start" class="inline">{{template "csrf" $csrf}}<button class="btn" type="submit">{{t "action.start"}}</button></form>
+    {{else}}
+    <form method="post" action="/apps/{{$a.Name}}/action/stop" class="inline" data-confirm="{{t "action.stop.confirm"}}">{{template "csrf" $csrf}}<button class="btn" type="submit">{{t "action.stop"}}</button></form>
+    {{end}}
+  </div>
+</div>
+{{template "app_tabs" .P}}
+{{end}}
+
+{{define "app_stats"}}
+{{if .Stats}}<dl class="kv"><div><dt>{{t "stats.rss"}}</dt><dd>{{humanKB .Stats.RSSKB}}</dd></div><div><dt>{{t "stats.cpu"}}</dt><dd>{{printf "%.1f" .Stats.CPUPct}} %</dd></div><div><dt>{{t "stats.procs"}}</dt><dd>{{.Stats.Procs}}</dd></div></dl>
+{{else}}<p class="muted">{{t "stats.none"}}</p>{{end}}
+{{end}}
+
+{{define "env_value"}}<code class="revealed">{{.}}</code>{{end}}

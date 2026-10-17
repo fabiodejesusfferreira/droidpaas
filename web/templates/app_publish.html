@@ -1,0 +1,21 @@
+{{define "content"}}
+{{with .Data}}
+<h1>{{.App.Name}}</h1>
+<p>{{t "publish.intro"}}</p>
+{{if not .HasKeys}}<p class="flash warn">{{t "wizard.nokeys"}} <a href="/settings/keys">{{t "wizard.nokeys.link"}}</a></p>{{end}}
+<ol class="howto">
+  {{if .SSHURL}}
+  <li><strong>{{t "publish.ssh"}}</strong>
+    <pre class="cmd" tabindex="0">git remote add droid {{.SSHURL}}
+git push droid {{.App.Branch}}</pre></li>
+  {{end}}
+  {{if .HTTPURL}}
+  <li><strong>{{t "publish.http"}}</strong> <small class="muted">{{t "publish.http.help"}}</small>
+    <pre class="cmd" tabindex="0">git remote add droid {{.HTTPURL}}
+git push droid {{.App.Branch}}</pre></li>
+  {{end}}
+  <li>{{t "publish.watch"}}</li>
+</ol>
+<p><a class="btn primary" href="/apps/{{.App.Name}}">{{t "publish.open"}}</a></p>
+{{end}}
+{{end}}

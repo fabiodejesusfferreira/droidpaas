@@ -21,7 +21,7 @@ func (s *Server) registerGitHTTP(mux *http.ServeMux) {
 }
 
 func (s *Server) gitHTTPEnabled(r *http.Request) bool {
-	set, err := s.effectiveSettings(r)
+	set, err := s.EffectiveSettings(r.Context())
 	return err == nil && set["git_http_enabled"] == "true"
 }
 

@@ -19,9 +19,12 @@ type MemInfo struct{ TotalKB, AvailableKB int64 }
 
 type DiskInfo struct{ TotalBytes, FreeBytes uint64 }
 
+// ProcStats é a soma da árvore de processos a partir de um PID. CPUTicks é cumulativo (utime+stime em ticks de
+// relógio); quem amostra calcula o percentual pela diferença entre duas leituras.
 type ProcStats struct {
-	RSSKB      int64
-	CPUPercent float64
+	RSSKB    int64
+	CPUTicks uint64
+	Procs    int
 }
 
 type DeviceProbe interface {
@@ -30,6 +33,9 @@ type DeviceProbe interface {
 	Disk(ctx context.Context, path string) (DiskInfo, error)
 	ProcessStats(ctx context.Context, rootPID int) (ProcStats, error)
 }
+
+// ClockTicksPerSecond: CLK_TCK é 100 no Linux/Android.
+const ClockTicksPerSecond = 100
 
 type Clock interface {
 	Now() time.Time

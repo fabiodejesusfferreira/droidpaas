@@ -1,0 +1,32 @@
+{{define "content"}}
+{{template "app_head" (dict "P" .Data.AppPage "CSRF" .CSRF)}}
+{{with .Data}}
+<section class="panel" aria-labelledby="dom-h">
+  <h2 id="dom-h">{{t "tabs.domains"}}</h2>
+  <ul class="plain">
+  {{range .Domains}}
+    <li>
+      <span class="wrap">{{.Hostname}}</span>{{if .Auto}} <span class="badge">{{t "domains.auto"}}</span>{{end}}
+      {{if not .Auto}}
+      <form method="post" action="/apps/{{$.Data.App.Name}}/domains/remove" class="inline" data-confirm="{{t "domains.remove.confirm"}}">
+        {{template "csrf" $.CSRF}}<input type="hidden" name="hostname" value="{{.Hostname}}"><button class="btn small ghost" type="submit">{{t "env.remove"}}</button></form>
+      {{end}}
+    </li>
+  {{else}}<li class="muted">{{t "domains.none"}}</li>{{end}}
+  </ul>
+  <form method="post" action="/apps/{{.App.Name}}/domains" class="row wrapform">
+    {{template "csrf" $.CSRF}}
+    <label class="grow">{{t "domains.add"}} <input name="hostname" placeholder="api.exemplo.com" required autocapitalize="none"></label>
+    <button class="btn primary" type="submit">{{t "domains.add.btn"}}</button>
+  </form>
+</section>
+<section class="panel" aria-labelledby="help-h">
+  <h2 id="help-h">{{t "domains.help.title"}}</h2>
+  <ul>
+    <li>{{t "domains.help.tunnel"}} <code>http://127.0.0.1:18080</code>.</li>
+    <li>{{if .BaseDomain}}{{t "domains.help.base"}} <code>*.{{.BaseDomain}}</code>.{{else}}{{t "domains.help.nobase"}} <a href="/settings/general">{{t "nav.settings"}}</a>.{{end}}</li>
+    <li>{{t "domains.help.status"}}: <strong>{{t (printf "tunnel.state.%s" .Tunnel)}}</strong>.</li>
+  </ul>
+</section>
+{{end}}
+{{end}}

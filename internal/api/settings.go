@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -16,8 +17,9 @@ var settingValidators = map[string]func(string) bool{
 	"git_http_enabled": func(v string) bool { return v == "true" || v == "false" },
 }
 
-func (s *Server) effectiveSettings(r *http.Request) (map[string]string, error) {
-	stored, err := s.Store.Settings(r.Context())
+// EffectiveSettings devolve as configurações editáveis (valores gravados sobre os padrões do droidd.toml).
+func (s *Server) EffectiveSettings(ctx context.Context) (map[string]string, error) {
+	stored, err := s.Store.Settings(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +39,7 @@ func (s *Server) effectiveSettings(r *http.Request) (map[string]string, error) {
 
 func (s *Server) registerSettings(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/settings", s.full(func(w http.ResponseWriter, r *http.Request) {
-		m, err := s.effectiveSettings(r)
+		m, err := s.EffectiveSettings(r.Context())
 		if err != nil {
 			s.internalErr(w, err)
 			return
@@ -50,27 +52,11 @@ func (s *Server) registerSettings(mux *http.ServeMux) {
 		if !decode(w, r, &in) {
 			return
 		}
-		for k, v := range in {
-			if val, ok := settingValidators[k]; !ok || !val(v) {
-				failD(w, 422, "validation", "configuração inválida: "+k, map[string]any{"key": k})
-				return
-			}
+		if err := s.ApplySettings(r.Context(), in); err != nil {
+			s.appErr(w, err)
+			return
 		}
-		for k, v := range in {
-			if err := s.Store.SetSetting(r.Context(), k, v); err != nil {
-				s.internalErr(w, err)
-				return
-			}
-		}
-		if _, ok := in["base_domain"]; ok {
-			if err := s.Apps.SyncAutoDomains(r.Context()); err != nil {
-				s.internalErr(w, err)
-				return
-			}
-		}
-		s.Events.Info(r.Context(), "settings.updated", nil, "configurações alteradas", map[string]any{"keys": keys(in)})
-		s.wake()
-		m, _ := s.effectiveSettings(r)
+		m, _ := s.EffectiveSettings(r.Context())
 		writeJSON(w, 200, map[string]any{"settings": m})
 	}))
 	mux.HandleFunc("PUT /api/v1/settings/tunnel", s.full(func(w http.ResponseWriter, r *http.Request) {
@@ -80,22 +66,10 @@ func (s *Server) registerSettings(mux *http.ServeMux) {
 		if !decode(w, r, &in) {
 			return
 		}
-		if in.Token == "" {
-			s.Store.DeleteSetting(r.Context(), "tunnel_token")
-			s.Events.Info(r.Context(), "tunnel.cleared", nil, "token do túnel removido", nil)
-		} else {
-			sealed, err := s.Box.Seal([]byte(in.Token))
-			if err != nil {
-				s.internalErr(w, err)
-				return
-			}
-			if err := s.Store.SetSetting(r.Context(), "tunnel_token", string(sealed)); err != nil {
-				s.internalErr(w, err)
-				return
-			}
-			s.Events.Info(r.Context(), "tunnel.configured", nil, "token do túnel definido", nil)
+		if err := s.SetTunnelToken(r.Context(), in.Token); err != nil {
+			s.appErr(w, err)
+			return
 		}
-		s.wake()
 		w.WriteHeader(204)
 	}))
 }

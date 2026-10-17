@@ -1,0 +1,65 @@
+{{define "content"}}
+<h1>{{t "wizard.title"}}</h1>
+<ol class="steps" aria-label="{{t "wizard.progress"}}">
+  <li{{if eq .Data.Step 1}} aria-current="step"{{end}}>{{t "wizard.step1"}}</li>
+  <li{{if eq .Data.Step 2}} aria-current="step"{{end}}>{{t "wizard.step2"}}</li>
+  <li{{if eq .Data.Step 3}} aria-current="step"{{end}}>{{t "wizard.step3"}}</li>
+</ol>
+<form method="post" action="/apps/new" class="stack narrow">
+  {{template "csrf" .CSRF}}
+  <input type="hidden" name="step" value="{{.Data.Step}}">
+  {{if .Data.Err}}<p class="flash err" role="alert">{{tr .Data.Err}}</p>{{end}}
+
+  {{if eq .Data.Step 1}}
+    <label>{{t "wizard.name"}}
+      <input name="name" value="{{.Data.Name}}" pattern="[a-z][a-z0-9-]{1,30}" required autofocus autocapitalize="none" aria-describedby="name-help">
+      <small id="name-help" class="muted">{{t "wizard.name.help"}}</small>
+    </label>
+    <label>{{t "wizard.branch"}}
+      <input name="branch" value="{{.Data.Branch}}" required>
+      <small class="muted">{{t "wizard.branch.help"}}</small>
+    </label>
+    <input type="hidden" name="runtime" value="{{.Data.Runtime}}">
+    <input type="hidden" name="build_cmd" value="{{.Data.BuildCmd}}">
+    <input type="hidden" name="start_cmd" value="{{.Data.StartCmd}}">
+    <input type="hidden" name="health_path" value="{{.Data.HealthPath}}">
+    <div class="row"><button class="btn primary" type="submit">{{t "wizard.next"}}</button></div>
+
+  {{else if eq .Data.Step 2}}
+    <input type="hidden" name="name" value="{{.Data.Name}}">
+    <input type="hidden" name="branch" value="{{.Data.Branch}}">
+    <label>{{t "wizard.runtime"}}
+      <select name="runtime">{{$r := .Data.Runtime}}{{range .Data.Runtimes}}<option value="{{.}}"{{if eq . $r}} selected{{end}}>{{t (printf "runtime.%s" .)}}</option>{{end}}</select>
+      <small class="muted">{{t "wizard.runtime.help"}}</small>
+    </label>
+    <label>{{t "wizard.build"}} <small class="muted">({{t "wizard.optional"}})</small>
+      <input name="build_cmd" value="{{.Data.BuildCmd}}" placeholder="npm run build">
+    </label>
+    <label>{{t "wizard.start"}} <small class="muted">({{t "wizard.optional"}})</small>
+      <input name="start_cmd" value="{{.Data.StartCmd}}" placeholder="node server.js">
+    </label>
+    <label>{{t "wizard.health"}} <small class="muted">({{t "wizard.optional"}})</small>
+      <input name="health_path" value="{{.Data.HealthPath}}" placeholder="/health">
+    </label>
+    <div class="row"><button class="btn" type="submit" name="back" value="1" formnovalidate>{{t "wizard.back"}}</button><button class="btn primary" type="submit">{{t "wizard.next"}}</button></div>
+
+  {{else}}
+    <input type="hidden" name="name" value="{{.Data.Name}}">
+    <input type="hidden" name="branch" value="{{.Data.Branch}}">
+    <input type="hidden" name="runtime" value="{{.Data.Runtime}}">
+    <input type="hidden" name="build_cmd" value="{{.Data.BuildCmd}}">
+    <input type="hidden" name="start_cmd" value="{{.Data.StartCmd}}">
+    <input type="hidden" name="health_path" value="{{.Data.HealthPath}}">
+    <dl class="kv panel">
+      <div><dt>{{t "wizard.name"}}</dt><dd>{{.Data.Name}}{{if .Data.BaseDomain}} · {{.Data.Name}}.{{.Data.BaseDomain}}{{end}}</dd></div>
+      <div><dt>{{t "wizard.branch"}}</dt><dd>{{.Data.Branch}}</dd></div>
+      <div><dt>{{t "wizard.runtime"}}</dt><dd>{{t (printf "runtime.%s" .Data.Runtime)}}</dd></div>
+      {{if .Data.BuildCmd}}<div><dt>{{t "wizard.build"}}</dt><dd><code>{{.Data.BuildCmd}}</code></dd></div>{{end}}
+      {{if .Data.StartCmd}}<div><dt>{{t "wizard.start"}}</dt><dd><code>{{.Data.StartCmd}}</code></dd></div>{{end}}
+      {{if .Data.HealthPath}}<div><dt>{{t "wizard.health"}}</dt><dd><code>{{.Data.HealthPath}}</code></dd></div>{{end}}
+    </dl>
+    {{if not .Data.HasKeys}}<p class="flash warn">{{t "wizard.nokeys"}} <a href="/settings/keys">{{t "wizard.nokeys.link"}}</a></p>{{end}}
+    <div class="row"><button class="btn" type="submit" name="back" value="1" formnovalidate>{{t "wizard.back"}}</button><button class="btn primary" type="submit">{{t "wizard.create"}}</button></div>
+  {{end}}
+</form>
+{{end}}

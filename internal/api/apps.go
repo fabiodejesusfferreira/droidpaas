@@ -7,13 +7,14 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"os/user"
+	user_ "os/user"
 	"strconv"
 	"strings"
 	"time"
 
 	"droidpaas/internal/apps"
 	"droidpaas/internal/logs"
+	"droidpaas/internal/sse"
 	"droidpaas/internal/store"
 )
 
@@ -46,24 +47,7 @@ func (s *Server) view(r *http.Request, a store.App) (appView, error) {
 	for _, d := range ds {
 		v.Domains = append(v.Domains, d.Hostname)
 	}
-	host := r.Host
-	if h, _, err := net.SplitHostPort(host); err == nil {
-		host = h
-	}
-	if s.Cfg.Git.SSHEnabled {
-		name := "git"
-		if u, err := user.Current(); err == nil {
-			name = u.Username
-		}
-		v.Git.SSH = "ssh://" + name + "@" + host + ":" + strconv.Itoa(s.Cfg.Git.SSHPort) + "/" + a.Name + ".git"
-	}
-	if set, _ := s.effectiveSettings(r); set["git_http_enabled"] == "true" {
-		scheme := "http"
-		if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-			scheme = "https"
-		}
-		v.Git.HTTP = scheme + "://" + r.Host + "/git/" + a.Name + ".git"
-	}
+	v.Git.SSH, v.Git.HTTP = s.GitURLs(r, a.Name)
 	return v, nil
 }
 
@@ -246,17 +230,17 @@ func (s *Server) registerApps(mux *http.ServeMux) {
 			}
 			return
 		}
-		sse := startSSE(w)
-		if sse == nil {
+		stream := sse.Start(w)
+		if stream == nil {
 			fail(w, 500, "internal", "streaming não suportado")
 			return
 		}
-		defer sse.close()
+		defer stream.Close()
 		n := 0
 		logs.Follow(r.Context(), dir, tail, 500*time.Millisecond, func(l logs.Line) {
 			n++
 			b, _ := json.Marshal(l)
-			sse.event("line", strconv.Itoa(n), string(b))
+			stream.Event("line", strconv.Itoa(n), string(b))
 		})
 	}))
 
@@ -294,4 +278,27 @@ func (s *Server) registerApps(mux *http.ServeMux) {
 		}
 		w.WriteHeader(204)
 	}))
+}
+
+// GitURLs monta os remotes SSH e HTTP de um app a partir do host da requisição (vazio quando desligado).
+func (s *Server) GitURLs(r *http.Request, name string) (sshURL, httpURL string) {
+	host := r.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	if s.Cfg.Git.SSHEnabled {
+		user := "git"
+		if u, err := user_.Current(); err == nil {
+			user = u.Username
+		}
+		sshURL = "ssh://" + user + "@" + host + ":" + strconv.Itoa(s.Cfg.Git.SSHPort) + "/" + name + ".git"
+	}
+	if set, _ := s.EffectiveSettings(r.Context()); set["git_http_enabled"] == "true" {
+		scheme := "http"
+		if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+			scheme = "https"
+		}
+		httpURL = scheme + "://" + r.Host + "/git/" + name + ".git"
+	}
+	return
 }

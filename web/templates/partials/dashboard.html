@@ -1,0 +1,35 @@
+{{define "apps_list"}}
+{{if not .}}
+<div class="empty"><p>{{t "dash.empty"}}</p><a class="btn primary" href="/apps/new">{{t "nav.new_app"}}</a></div>
+{{else}}
+<div class="cards">
+{{range .}}
+<article class="card">
+  <h3><a href="/apps/{{.App.Name}}">{{.App.Name}}</a> {{template "state_badge" .State}}</h3>
+  <dl class="kv">
+    <div><dt>{{t "card.runtime"}}</dt><dd>{{if .Runtime}}{{.Runtime}}{{else}}—{{end}}{{if .App.Port}} · {{t "card.port"}} {{.App.Port}}{{end}}</dd></div>
+    <div><dt>{{t "card.release"}}</dt><dd>{{if .Release}}<code>{{shortSHA .Release.GitSHA}}</code> · {{agoT .Deployed}}{{else}}{{t "card.norelease"}}{{end}}</dd></div>
+    {{if .URL}}<div><dt>URL</dt><dd class="wrap"><a href="{{.URL}}" rel="noopener noreferrer">{{.URL}}</a></dd></div>{{end}}
+    {{if .Stats}}<div><dt>{{t "stats.usage"}}</dt><dd>{{humanKB .Stats.RSSKB}} · {{printf "%.0f" .Stats.CPUPct}} % CPU</dd></div>{{end}}
+  </dl>
+</article>
+{{end}}
+</div>
+{{end}}
+{{end}}
+
+{{define "device"}}
+{{if not .Ready}}<p class="muted">{{t "device.loading"}}</p>{{else}}
+<dl class="kv device">
+  <div><dt>{{t "device.battery"}}</dt><dd>
+    {{if .HasBattery}}
+      <meter min="0" max="100" low="20" high="80" optimum="100" value="{{.Percent}}" aria-label="{{t "device.battery"}}">{{.Percent}}%</meter>
+      {{.Percent}} % · {{printf "%.1f" .TempC}} °C · {{if .Charging}}{{t "device.charging"}}{{else}}{{t "device.discharging"}}{{end}}
+      {{if .Hot}}<span class="badge st-crashed">{{t "device.hot"}}</span>{{end}}
+    {{else}}<span class="muted">{{t .BatteryNote}}</span>{{end}}
+  </dd></div>
+  <div><dt>{{t "device.ram"}}</dt><dd>{{.MemAvailMB}} MB {{t "device.free"}} / {{.MemTotalMB}} MB</dd></div>
+  <div><dt>{{t "device.disk"}}</dt><dd><meter min="0" max="100" low="70" high="90" optimum="0" value="{{.DiskUsedPct}}" aria-label="{{t "device.disk"}}">{{.DiskUsedPct}}%</meter> {{.DiskUsedPct}} % · {{printf "%.1f" .DiskFreeGB}} GB {{t "device.free"}}</dd></div>
+</dl>
+{{end}}
+{{end}}

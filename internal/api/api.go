@@ -20,6 +20,7 @@ import (
 	"droidpaas/internal/events"
 	"droidpaas/internal/gitsrv"
 	"droidpaas/internal/runit"
+	"droidpaas/internal/stats"
 	"droidpaas/internal/store"
 )
 
@@ -34,6 +35,7 @@ type Server struct {
 	Deploy  *deploy.Engine
 	Git     *gitsrv.Service
 	Runit   runit.ServiceManager
+	Stats   *stats.Collector
 	Started time.Time
 	// OnChange acorda o reconciliador depois de mudar o estado desejado.
 	OnChange func()
@@ -48,9 +50,15 @@ type ctxKey struct{}
 
 func who(r *http.Request) principal { p, _ := r.Context().Value(ctxKey{}).(principal); return p }
 
-// Public monta o mux de 127.0.0.1:8090 (painel/API).
+// Public monta um mux só com a API (usado nos testes); o droidd compõe API + painel em um mux único.
 func (s *Server) Public() http.Handler {
 	mux := http.NewServeMux()
+	s.Routes(mux)
+	return mux
+}
+
+// Routes registra as rotas da API REST, do Git HTTP e do /healthz.
+func (s *Server) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, 200, map[string]string{"status": "ok", "version": s.Version})
 	})
@@ -64,10 +72,10 @@ func (s *Server) Public() http.Handler {
 	mux.HandleFunc("GET /api/v1/backup", s.full(s.handleBackup))
 	mux.HandleFunc("GET /api/v1/me", s.full(s.handleMe))
 	mux.HandleFunc("GET /api/v1/system", s.full(s.handleSystem))
+	mux.HandleFunc("GET /api/v1/apps/{name}/stats", s.full(s.handleAppStats))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, 404, "not_found", "rota inexistente")
 	})
-	return mux
 }
 
 // Internal é o mux do socket Unix 0600 (hook do git e CLI local).
@@ -208,25 +216,16 @@ func (s *Server) registerTokens(mux *http.ServeMux) {
 		if !decode(w, r, &in) {
 			return
 		}
-		if in.Scope == "" {
-			in.Scope = "full"
-		}
-		if strings.TrimSpace(in.Name) == "" || len(in.Name) > 64 || (in.Scope != "full" && in.Scope != "git") {
-			fail(w, 422, "validation", "name (1–64 caracteres) obrigatório; scope: full|git")
-			return
-		}
-		tok, hash, prefix, err := auth.NewToken()
+		id, tok, err := s.CreateToken(r.Context(), who(r).UserID, in.Name, in.Scope)
 		if err != nil {
-			s.internalErr(w, err)
+			s.appErr(w, err)
 			return
 		}
-		id, err := s.Store.CreateToken(r.Context(), who(r).UserID, in.Name, hash, prefix, in.Scope)
-		if err != nil {
-			s.internalErr(w, err)
-			return
+		scope := in.Scope
+		if scope == "" {
+			scope = "full"
 		}
-		s.Events.Info(r.Context(), "token.created", nil, "token de API criado", map[string]any{"id": id, "name": in.Name, "scope": in.Scope})
-		writeJSON(w, 201, map[string]any{"id": id, "name": in.Name, "scope": in.Scope, "prefix": prefix, "token": tok})
+		writeJSON(w, 201, map[string]any{"id": id, "name": strings.TrimSpace(in.Name), "scope": scope, "prefix": tok[:9], "token": tok})
 	}))
 	mux.HandleFunc("DELETE /api/v1/tokens/{id}", s.full(func(w http.ResponseWriter, r *http.Request) {
 		id, ok := pathID(r)
@@ -234,7 +233,7 @@ func (s *Server) registerTokens(mux *http.ServeMux) {
 			fail(w, 400, "bad_request", "id inválido")
 			return
 		}
-		if err := s.Store.RevokeToken(r.Context(), who(r).UserID, id); err != nil {
+		if err := s.RevokeToken(r.Context(), who(r).UserID, id); err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				fail(w, 404, "token_not_found", "token inexistente ou já revogado")
 				return
@@ -242,7 +241,6 @@ func (s *Server) registerTokens(mux *http.ServeMux) {
 			s.internalErr(w, err)
 			return
 		}
-		s.Events.Info(r.Context(), "token.revoked", nil, "token de API revogado", map[string]any{"id": id})
 		w.WriteHeader(204)
 	}))
 }

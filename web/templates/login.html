@@ -1,0 +1,17 @@
+{{define "content"}}
+<div class="login">
+  <h1>DroidPaaS</h1>
+  <form method="post" action="/login" class="stack">
+    <input type="hidden" name="_csrf" value="{{.Data.CSRF}}">
+    <input type="hidden" name="next" value="{{.Data.Next}}">
+    {{if .Data.Err}}<p class="flash err" role="alert">{{t .Data.Err}}</p>{{end}}
+    <label>{{t "login.user"}}
+      <input name="username" value="{{.Data.Username}}" autocomplete="username" autocapitalize="none" required autofocus>
+    </label>
+    <label>{{t "login.password"}}
+      <input name="password" type="password" autocomplete="current-password" required>
+    </label>
+    <button class="btn primary" type="submit">{{t "login.submit"}}</button>
+  </form>
+</div>
+{{end}}

@@ -23,9 +23,11 @@ import (
 	"droidpaas/internal/proxy"
 	"droidpaas/internal/reconcile"
 	"droidpaas/internal/runit"
+	"droidpaas/internal/stats"
 	"droidpaas/internal/store"
 	"droidpaas/internal/system"
 	"droidpaas/internal/tunnel"
+	"droidpaas/internal/web"
 )
 
 func runServe(args []string) error {
@@ -81,13 +83,28 @@ func runServe(args []string) error {
 		reconcile.Step{Name: "apps", Run: (&reconcile.Apps{Store: st, Svc: svc, Runit: rt, Events: ev, Log: log, Deploying: eng.IsDeploying,
 			Tracker: reconcile.NewCrashTracker(cfg.Reconcile.CrashLoopWindow.D(), cfg.Reconcile.CrashLoopThreshold)}).Run},
 		reconcile.Step{Name: "logs", Run: reconcile.Every(time.Hour, eng.PruneLogs)},
+		reconcile.Step{Name: "sessions", Run: reconcile.Every(time.Hour, func(ctx context.Context) error {
+			now := time.Now()
+			_, err := st.PurgeSessions(ctx, now.UnixMilli(), now.Add(-12*time.Hour).UnixMilli())
+			return err
+		})},
 		reconcile.Step{Name: "tunnel", Run: (&tunnel.Controller{Store: st, Cfg: cfg, Runit: rt, Box: box, Events: ev}).Step},
 		reconcile.Step{Name: "proxy", Run: proxy.NewController(st, cfg, rt, proxy.NewClient(cfg.Proxy.Admin), ev).Step})
 	svc.Wake, srv.OnChange, eng.Wake = loop.Wake, loop.Wake, loop.Wake
 	go eng.Run(ctx)
 	go loop.Run(ctx)
 
-	pub := &http.Server{Addr: cfg.HTTP.PanelAddr, Handler: srv.Public(), ReadHeaderTimeout: 10 * time.Second}
+	col := stats.New(st, rt, system.TermuxProbe{}, cfg)
+	srv.Stats = col
+	go col.Run(ctx)
+	panel, err := web.New(srv, col, log)
+	if err != nil {
+		return err
+	}
+	mux := http.NewServeMux()
+	srv.Routes(mux)
+	panel.Routes(mux)
+	pub := &http.Server{Addr: cfg.HTTP.PanelAddr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	internal := &http.Server{Handler: srv.Internal(), ReadHeaderTimeout: 10 * time.Second}
 
 	sock := cfg.SocketPath()

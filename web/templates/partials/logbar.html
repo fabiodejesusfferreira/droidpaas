@@ -1,0 +1,8 @@
+{{define "logbar"}}
+<div class="logbar">
+  <label class="check"><input type="checkbox" data-follow checked> {{t "logs.follow"}}</label>
+  <label>{{t "logs.filter"}} <input type="search" data-filter autocomplete="off"></label>
+  {{if .Download}}<a class="btn small" href="{{.Download}}">{{t "logs.download"}}</a>{{end}}
+  <span class="muted small" data-status role="status"></span>
+</div>
+{{end}}

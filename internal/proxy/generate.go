@@ -70,6 +70,13 @@ type server struct {
 		Disable bool `json:"disable"`
 	} `json:"automatic_https"`
 	Routes []route `json:"routes"`
+	// o cloudflared fala com o Caddy por 127.0.0.1: só assim o X-Forwarded-Proto: https do túnel é preservado
+	TrustedProxies trusted `json:"trusted_proxies"`
+}
+
+type trusted struct {
+	Source string   `json:"source"`
+	Ranges []string `json:"ranges"`
 }
 
 type route struct {
@@ -108,6 +115,7 @@ func Generate(in Input) ([]byte, error) {
 	var s server
 	s.Listen = []string{in.Listen}
 	s.AutomaticHTTPS.Disable = true // HTTPS fica com o túnel (ADR-06)
+	s.TrustedProxies = trusted{Source: "static", Ranges: []string{"127.0.0.1/32", "::1/128"}}
 
 	if in.PanelHostname != "" {
 		s.Routes = append(s.Routes, route{

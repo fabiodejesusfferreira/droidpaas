@@ -1,0 +1,39 @@
+{{define "content"}}
+{{template "app_head" (dict "P" .Data.AppPage "CSRF" .CSRF)}}
+{{with .Data}}
+<p class="muted">{{t "env.help"}}</p>
+<form method="post" action="/apps/{{.App.Name}}/environment" class="stack">
+  {{template "csrf" $.CSRF}}
+  <table class="table envtable">
+    <thead><tr><th>{{t "env.key"}}</th><th>{{t "env.value"}}</th><th>{{t "env.secret"}}</th><th>{{t "env.remove"}}</th></tr></thead>
+    <tbody>
+    {{range $i, $e := .Entries}}
+    <tr>
+      <td data-label="{{t "env.key"}}"><input name="k" value="{{$e.Key}}" readonly aria-label="{{t "env.key"}}"></td>
+      <td data-label="{{t "env.value"}}">
+        <span class="valcell">
+          <input name="v" value="{{$e.Value}}" aria-label="{{t "env.value"}} {{$e.Key}}" autocomplete="off" spellcheck="false">
+          {{if $e.Secret}}<button type="button" class="btn small ghost" hx-post="/apps/{{$.Data.App.Name}}/environment/reveal" hx-vals='{"key":"{{$e.Key}}"}' hx-target="this" hx-swap="outerHTML">{{t "env.reveal"}}</button>{{end}}
+        </span>
+      </td>
+      <td data-label="{{t "env.secret"}}"><input type="checkbox" name="s{{idx $i}}" value="1"{{if $e.Secret}} checked{{end}} aria-label="{{t "env.secret"}} {{$e.Key}}"></td>
+      <td data-label="{{t "env.remove"}}"><input type="checkbox" name="d{{idx $i}}" value="1" aria-label="{{t "env.remove"}} {{$e.Key}}"></td>
+    </tr>
+    {{end}}
+    {{range $j := .Spare}}{{$n := add (len $.Data.Entries) $j}}
+    <tr class="newrow">
+      <td data-label="{{t "env.key"}}"><input name="k" placeholder="NOVA_VARIAVEL" pattern="[A-Za-z_][A-Za-z0-9_]*" aria-label="{{t "env.new"}}" autocapitalize="characters"></td>
+      <td data-label="{{t "env.value"}}"><input name="v" aria-label="{{t "env.value"}}" autocomplete="off" spellcheck="false"></td>
+      <td data-label="{{t "env.secret"}}"><input type="checkbox" name="s{{idx $n}}" value="1" aria-label="{{t "env.secret"}}"></td>
+      <td></td>
+    </tr>
+    {{end}}
+    </tbody>
+  </table>
+  <div class="row">
+    <button class="btn primary" type="submit">{{t "env.save"}}</button>
+    <button class="btn" type="submit" name="restart" value="1">{{t "env.save_restart"}}</button>
+  </div>
+</form>
+{{end}}
+{{end}}

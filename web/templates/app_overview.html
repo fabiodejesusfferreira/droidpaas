@@ -1,0 +1,34 @@
+{{define "content"}}
+{{template "app_head" (dict "P" .Data.AppPage "CSRF" .CSRF)}}
+{{with .Data}}
+<div class="grid2">
+  <section class="panel" aria-labelledby="rel-h">
+    <h2 id="rel-h">{{t "overview.release"}}</h2>
+    {{if .Card.Release}}
+    <dl class="kv">
+      <div><dt>{{t "overview.commit"}}</dt><dd><code>{{shortSHA .Card.Release.GitSHA}}</code> {{.Card.Release.Message}}</dd></div>
+      <div><dt>{{t "overview.when"}}</dt><dd>{{agoT .Card.Deployed}}</dd></div>
+      <div><dt>{{t "card.runtime"}}</dt><dd>{{if .Card.Runtime}}{{.Card.Runtime}}{{else}}—{{end}}{{if .App.Port}} · {{t "card.port"}} {{.App.Port}}{{end}}</dd></div>
+    </dl>
+    {{else}}<p class="muted">{{t "card.norelease"}} <a href="/apps/{{.App.Name}}/publish">{{t "overview.howto"}}</a></p>{{end}}
+  </section>
+  <section class="panel" aria-labelledby="res-h">
+    <h2 id="res-h">{{t "overview.resources"}}</h2>
+    <div hx-get="/apps/{{.App.Name}}/fragments/stats" hx-trigger="every 10s" hx-swap="innerHTML">{{template "app_stats" .Card}}</div>
+  </section>
+</div>
+<section class="panel" aria-labelledby="git-h">
+  <h2 id="git-h">Git</h2>
+  <dl class="kv">
+    {{if .SSHURL}}<div><dt>SSH</dt><dd class="wrap"><code>{{.SSHURL}}</code></dd></div>{{end}}
+    {{if .HTTPURL}}<div><dt>HTTP</dt><dd class="wrap"><code>{{.HTTPURL}}</code></dd></div>{{end}}
+    <div><dt>{{t "wizard.branch"}}</dt><dd>{{.App.Branch}}</dd></div>
+  </dl>
+</section>
+<section aria-labelledby="last-h">
+  <h2 id="last-h">{{t "overview.last"}}</h2>
+  {{template "deploy_table" (dict "App" .App.Name "Rows" .Deploys)}}
+  <p><a href="/apps/{{.App.Name}}/deployments">{{t "overview.all"}}</a></p>
+</section>
+{{end}}
+{{end}}

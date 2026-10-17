@@ -1,0 +1,20 @@
+{{define "deploy_table"}}
+{{if not .Rows}}<p class="muted">{{t "deploys.none"}}</p>{{else}}
+{{$app := .App}}
+<table class="table">
+  <thead><tr><th>#</th><th>{{t "deploys.status"}}</th><th>{{t "deploys.trigger"}}</th><th>{{t "overview.commit"}}</th><th>{{t "deploys.duration"}}</th><th>{{t "overview.when"}}</th></tr></thead>
+  <tbody>
+  {{range .Rows}}
+  <tr>
+    <td data-label="#"><a href="/apps/{{$app}}/deployments/{{.D.ID}}">#{{.D.ID}}</a></td>
+    <td data-label="{{t "deploys.status"}}">{{template "deploy_badge" .D.Status}}{{if .Current}} <span class="badge">{{t "deploys.current"}}</span>{{end}}</td>
+    <td data-label="{{t "deploys.trigger"}}">{{t (printf "trigger.%s" .D.Trigger)}}</td>
+    <td data-label="{{t "overview.commit"}}"><code>{{.SHA}}</code></td>
+    <td data-label="{{t "deploys.duration"}}">{{if .Duration}}{{.Duration}}{{else}}—{{end}}</td>
+    <td data-label="{{t "overview.when"}}">{{agoMS .D.QueuedAt}}</td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{end}}
+{{end}}

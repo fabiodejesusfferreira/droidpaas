@@ -1,0 +1,11 @@
+{{define "content"}}
+<h1>{{t "nav.apps"}}</h1>
+<section class="panel" aria-labelledby="dev-h">
+  <h2 id="dev-h">{{t "device.title"}}</h2>
+  <div id="device" hx-get="/fragments/device" hx-trigger="every 10s" hx-swap="innerHTML">{{template "device" .Data.Device}}</div>
+</section>
+<section aria-labelledby="apps-h">
+  <h2 id="apps-h" class="sr">{{t "nav.apps"}}</h2>
+  <div id="apps" hx-get="/fragments/apps" hx-trigger="every 10s" hx-swap="innerHTML">{{template "apps_list" .Data.Cards}}</div>
+</section>
+{{end}}

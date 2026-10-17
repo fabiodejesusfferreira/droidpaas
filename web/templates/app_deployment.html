@@ -1,0 +1,24 @@
+{{define "content"}}
+{{template "app_head" (dict "P" .Data.AppPage "CSRF" .CSRF)}}
+{{with .Data}}
+<h2>{{t "deploys.deploy"}} #{{.D.ID}} {{template "deploy_badge" .D.Status}}</h2>
+<dl class="kv panel">
+  <div><dt>{{t "deploys.trigger"}}</dt><dd>{{t (printf "trigger.%s" .D.Trigger)}}</dd></div>
+  <div><dt>{{t "overview.commit"}}</dt><dd><code>{{.SHA}}</code>{{if .Rel}} {{.Rel.Message}}{{end}}</dd></div>
+  {{if .D.Stage}}<div><dt>{{t "deploys.stage"}}</dt><dd>{{.D.Stage}}</dd></div>{{end}}
+  {{if .Dur}}<div><dt>{{t "deploys.duration"}}</dt><dd>{{.Dur}}</dd></div>{{end}}
+  {{if .D.Error}}<div><dt>{{t "deploys.error"}}</dt><dd class="err-text">{{.D.Error}}</dd></div>{{end}}
+</dl>
+{{if .Live}}
+<form method="post" action="/apps/{{.App.Name}}/deployments/{{.D.ID}}/cancel" class="inline" data-confirm="{{t "deploys.cancel.confirm"}}">
+  {{template "csrf" $.CSRF}}<button class="btn" type="submit">{{t "deploys.cancel"}}</button></form>
+<div class="logview" data-log data-src="/apps/{{.App.Name}}/deployments/{{.D.ID}}/stream" data-reload-on-end="1">
+  {{template "logbar" (dict "Download" "")}}
+  <pre class="log" tabindex="0" aria-label="{{t "logs.label"}}" data-out></pre>
+</div>
+{{else}}
+<pre class="log" tabindex="0" aria-label="{{t "logs.label"}}">{{.Log}}</pre>
+{{end}}
+<p><a href="/apps/{{.App.Name}}/deployments">{{t "deploys.back"}}</a></p>
+{{end}}
+{{end}}

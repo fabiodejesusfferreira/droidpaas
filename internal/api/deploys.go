@@ -2,6 +2,7 @@ package api
 
 import (
 	"droidpaas/internal/gitsrv"
+	"droidpaas/internal/sse"
 	"encoding/json"
 	"errors"
 	"io"
@@ -172,21 +173,21 @@ func (s *Server) registerDeploys(mux *http.ServeMux) {
 		if n, err := strconv.Atoi(r.URL.Query().Get("from")); err == nil {
 			from = n
 		}
-		sse := startSSE(w)
-		if sse == nil {
+		stream := sse.Start(w)
+		if stream == nil {
 			fail(w, 500, "internal", "streaming não suportado")
 			return
 		}
-		defer sse.close()
+		defer stream.Close()
 		status, err := s.Deploy.Follow(r.Context(), d.ID, from, func(n int, line string) {
 			b, _ := json.Marshal(map[string]any{"n": n, "text": line})
-			sse.event("line", strconv.Itoa(n), string(b))
+			stream.Event("line", strconv.Itoa(n), string(b))
 		})
 		if err != nil {
 			return // cliente saiu
 		}
 		b, _ := json.Marshal(map[string]string{"status": status})
-		sse.event("end", "", string(b))
+		stream.Event("end", "", string(b))
 	}))
 }
 

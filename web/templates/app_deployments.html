@@ -1,0 +1,33 @@
+{{define "content"}}
+{{template "app_head" (dict "P" .Data.AppPage "CSRF" .CSRF)}}
+{{with .Data}}
+<div class="grid2">
+  <section class="panel" aria-labelledby="dep-h">
+    <h2 id="dep-h">{{t "deploys.new"}}</h2>
+    <form method="post" action="/apps/{{.App.Name}}/deployments" class="stack">
+      {{template "csrf" $.CSRF}}
+      <label>{{t "deploys.ref"}} <small class="muted">({{t "wizard.optional"}})</small>
+        <input name="ref" placeholder="{{.App.Branch}}"></label>
+      <label class="check"><input type="checkbox" name="rebuild" value="1"> {{t "deploys.rebuild"}}</label>
+      <div class="row"><button class="btn primary" type="submit">{{t "action.deploy"}}</button></div>
+    </form>
+  </section>
+  <section class="panel" aria-labelledby="rb-h">
+    <h2 id="rb-h">{{t "deploys.rollback"}}</h2>
+    {{if .Rollback}}
+    <form method="post" action="/apps/{{.App.Name}}/rollback" class="stack" data-confirm="{{t "deploys.rollback.confirm"}}">
+      {{template "csrf" $.CSRF}}
+      <label>{{t "deploys.rollback.to"}}
+        <select name="release_id">{{range .Rollback}}<option value="{{.ID}}">{{shortSHA .GitSHA}} · {{.Message}} · {{agoMS .CreatedAt}}</option>{{end}}</select></label>
+      <div class="row"><button class="btn" type="submit">{{t "deploys.rollback"}}</button></div>
+    </form>
+    {{else}}<p class="muted">{{t "deploys.rollback.none"}}</p>{{end}}
+  </section>
+</div>
+<section aria-labelledby="hist-h">
+  <h2 id="hist-h">{{t "deploys.history"}}</h2>
+  {{template "deploy_table" (dict "App" .App.Name "Rows" .Rows)}}
+  {{if .Next}}<p><a class="btn small" href="/apps/{{.App.Name}}/deployments?before={{.Next}}">{{t "pager.older"}}</a></p>{{end}}
+</section>
+{{end}}
+{{end}}

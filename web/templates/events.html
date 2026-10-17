@@ -1,0 +1,20 @@
+{{define "content"}}
+<h1>{{t "nav.events"}}</h1>
+{{if not .Data.Events}}<p class="muted">{{t "events.none"}}</p>{{else}}
+<table class="table">
+  <thead><tr><th>{{t "events.when"}}</th><th>{{t "events.level"}}</th><th>{{t "events.kind"}}</th><th>{{t "events.message"}}</th></tr></thead>
+  <tbody>
+  {{range .Data.Events}}
+  <tr>
+    <td data-label="{{t "events.when"}}"><time datetime="{{.TS.Format "2006-01-02T15:04:05Z"}}">{{.TS.Local.Format "02/01 15:04:05"}}</time></td>
+    <td data-label="{{t "events.level"}}"><span class="badge lv-{{.Level}}">{{.Level}}</span></td>
+    <td data-label="{{t "events.kind"}}"><code>{{.Kind}}</code></td>
+    <td data-label="{{t "events.message"}}">{{if .App}}<a href="/apps/{{.App}}">{{.App}}</a> · {{end}}{{.Message}}
+      {{if .Data}}<details><summary>{{t "events.details"}}</summary><pre class="log small">{{.Data}}</pre></details>{{end}}</td>
+  </tr>
+  {{end}}
+  </tbody>
+</table>
+{{if .Data.Next}}<p><a class="btn small" href="/events?before={{.Data.Next}}">{{t "pager.older"}}</a></p>{{end}}
+{{end}}
+{{end}}

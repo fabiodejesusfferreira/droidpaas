@@ -1,0 +1,72 @@
+{{define "content"}}
+{{with .Data}}
+<h1>{{t "nav.settings"}}</h1>
+<nav class="tabs" aria-label="{{t "settings.tabs"}}">
+  {{$tab := .Tab}}{{range .Tabs}}<a href="/settings/{{.}}"{{if eq . $tab}} aria-current="page"{{end}}>{{t (printf "stab.%s" .)}}</a>{{end}}
+</nav>
+
+{{if eq .Tab "general"}}
+<form method="post" action="/settings/general" class="stack narrow">
+  {{template "csrf" $.CSRF}}
+  <label>{{t "settings.base_domain"}} <input name="base_domain" value="{{index .Settings "base_domain"}}" placeholder="apps.exemplo.com" autocapitalize="none"><small class="muted">{{t "settings.base_domain.help"}}</small></label>
+  <label>{{t "settings.panel_hostname"}} <input name="panel_hostname" value="{{index .Settings "panel_hostname"}}" placeholder="painel.exemplo.com" autocapitalize="none"><small class="muted">{{t "settings.panel_hostname.help"}}</small></label>
+  <label>{{t "settings.keep_releases"}} <input name="keep_releases" type="number" min="1" max="50" value="{{index .Settings "keep_releases"}}" required></label>
+  <label class="check"><input type="checkbox" name="git_http_enabled" value="1"{{if eq (index .Settings "git_http_enabled") "true"}} checked{{end}}> {{t "settings.git_http"}}</label>
+  <div class="row"><button class="btn primary" type="submit">{{t "settings.save"}}</button></div>
+</form>
+
+{{else if eq .Tab "tunnel"}}
+<section class="panel"><p>{{t "tunnel.state"}}: <strong>{{t (printf "tunnel.state.%s" .Tunnel)}}</strong></p>
+<p class="muted">{{t "tunnel.help"}}</p>
+<ol><li>{{t "tunnel.step1"}}</li><li>{{t "tunnel.step2"}} <code>*.{{if index .Settings "base_domain"}}{{index .Settings "base_domain"}}{{else}}apps.seudominio.com{{end}}</code> → <code>http://127.0.0.1:18080</code></li><li>{{t "tunnel.step3"}}</li></ol></section>
+<form method="post" action="/settings/tunnel" class="stack narrow">
+  {{template "csrf" $.CSRF}}
+  <label>{{t "tunnel.token"}} <input name="token" type="password" autocomplete="off" placeholder="{{if .TunnelSet}}{{t "tunnel.token.set"}}{{end}}"></label>
+  <div class="row"><button class="btn primary" type="submit">{{t "tunnel.save"}}</button>
+  {{if .TunnelSet}}<button class="btn danger" type="submit" name="clear" value="1" formnovalidate data-confirm-btn="{{t "tunnel.clear.confirm"}}">{{t "tunnel.clear"}}</button>{{end}}</div>
+</form>
+
+{{else if eq .Tab "keys"}}
+<section class="panel">
+  <p class="muted">{{t "keys.help"}}</p>
+  <ul class="plain">{{range .Keys}}
+    <li><strong>{{.Name}}</strong> <code class="wrap">{{.Fingerprint}}</code>
+      <form method="post" action="/settings/keys/remove" class="inline" data-confirm="{{t "keys.remove.confirm"}}">{{template "csrf" $.CSRF}}<input type="hidden" name="id" value="{{.ID}}"><button class="btn small ghost" type="submit">{{t "env.remove"}}</button></form></li>
+  {{else}}<li class="muted">{{t "keys.none"}}</li>{{end}}</ul>
+</section>
+<form method="post" action="/settings/keys" class="stack narrow">
+  {{template "csrf" $.CSRF}}
+  <label>{{t "keys.name"}} <input name="name" placeholder="meu-laptop"></label>
+  <label>{{t "keys.public"}} <textarea name="public_key" rows="4" placeholder="ssh-ed25519 AAAA… comentário" required spellcheck="false"></textarea></label>
+  <div class="row"><button class="btn primary" type="submit">{{t "keys.add"}}</button></div>
+</form>
+
+{{else if eq .Tab "tokens"}}
+{{if $.Secret}}<section class="panel secret" role="alert"><p><strong>{{t "tokens.once"}}</strong></p><code class="wrap">{{$.Secret}}</code></section>{{end}}
+<section class="panel">
+  <table class="table"><thead><tr><th>{{t "keys.name"}}</th><th>{{t "tokens.prefix"}}</th><th>{{t "tokens.scope"}}</th><th>{{t "deploys.status"}}</th><th></th></tr></thead><tbody>
+  {{range .Tokens}}<tr>
+    <td data-label="{{t "keys.name"}}">{{.Name}}</td><td data-label="{{t "tokens.prefix"}}"><code>{{.Prefix}}…</code></td><td data-label="{{t "tokens.scope"}}">{{.Scope}}</td>
+    <td data-label="{{t "deploys.status"}}">{{if .RevokedAt}}{{t "tokens.revoked"}}{{else}}{{t "tokens.active"}}{{end}}</td>
+    <td>{{if not .RevokedAt}}<form method="post" action="/settings/tokens/revoke" class="inline" data-confirm="{{t "tokens.revoke.confirm"}}">{{template "csrf" $.CSRF}}<input type="hidden" name="id" value="{{.ID}}"><button class="btn small ghost" type="submit">{{t "tokens.revoke"}}</button></form>{{end}}</td>
+  </tr>{{end}}</tbody></table>
+</section>
+<form method="post" action="/settings/tokens" class="stack narrow">
+  {{template "csrf" $.CSRF}}
+  <label>{{t "keys.name"}} <input name="name" required placeholder="ci"></label>
+  <label>{{t "tokens.scope"}} <select name="scope"><option value="full">{{t "tokens.scope.full"}}</option><option value="git">{{t "tokens.scope.git"}}</option></select></label>
+  <div class="row"><button class="btn primary" type="submit">{{t "tokens.create"}}</button></div>
+</form>
+
+{{else if eq .Tab "account"}}
+<form method="post" action="/settings/account" class="stack narrow">
+  {{template "csrf" $.CSRF}}
+  <p class="muted">{{t "account.sessions"}}: {{.Sessions}}</p>
+  <label>{{t "account.current"}} <input name="current" type="password" autocomplete="current-password" required></label>
+  <label>{{t "account.new"}} <input name="new" type="password" autocomplete="new-password" minlength="12" required><small class="muted">{{t "account.new.help"}}</small></label>
+  <label>{{t "account.confirm"}} <input name="confirm" type="password" autocomplete="new-password" minlength="12" required></label>
+  <div class="row"><button class="btn primary" type="submit">{{t "account.change"}}</button></div>
+</form>
+{{end}}
+{{end}}
+{{end}}

@@ -1,0 +1,48 @@
+{{define "base.html"}}<!doctype html>
+<html lang="pt-BR" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"selfRequestsOnly":true}'>
+<title>{{if .Title}}{{.Title}} · {{end}}DroidPaaS</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css?v={{.Version}}">
+<script src="/static/htmx.min.js?v=2.0.4" defer></script>
+<script src="/static/app.js?v={{.Version}}" defer></script>
+</head>
+<body{{if .CSRF}} hx-headers='{"X-CSRF-Token":"{{.CSRF}}"}'{{end}}>
+<a class="skip" href="#main">{{t "a11y.skip"}}</a>
+{{if .Bare}}
+<main id="main" class="bare">
+{{template "flashes" .}}
+{{template "content" .}}
+</main>
+{{else}}
+<input type="checkbox" id="nav-toggle" class="nav-toggle">
+<header class="topbar">
+  <label for="nav-toggle" class="menu-btn" title="{{t "nav.menu"}}"><span aria-hidden="true">☰</span><span class="sr">{{t "nav.menu"}}</span></label>
+  <a class="brand" href="/">DroidPaaS</a>
+  <a class="btn primary small" href="/apps/new">+ {{t "nav.new_app"}}</a>
+</header>
+<nav class="sidebar" aria-label="{{t "nav.label"}}">
+  <a href="/"{{if eq .Nav "apps"}} aria-current="page"{{end}}>{{t "nav.apps"}}</a>
+  <a href="/apps/new"{{if eq .Nav "new"}} aria-current="page"{{end}}>{{t "nav.new_app"}}</a>
+  <a href="/events"{{if eq .Nav "events"}} aria-current="page"{{end}}>{{t "nav.events"}}</a>
+  <a href="/settings"{{if eq .Nav "settings"}} aria-current="page"{{end}}>{{t "nav.settings"}}</a>
+  <div class="sidebar-foot">
+    <button type="button" class="btn small ghost" data-theme-toggle>{{t "theme.toggle"}}</button>
+    <form method="post" action="/logout" class="inline">
+      <input type="hidden" name="_csrf" value="{{.CSRF}}">
+      <button class="btn small ghost" type="submit">{{t "nav.logout"}} ({{.User}})</button>
+    </form>
+    <span class="muted small">v{{.Version}}</span>
+  </div>
+</nav>
+<main id="main">
+{{template "flashes" .}}
+{{template "content" .}}
+</main>
+{{end}}
+</body>
+</html>{{end}}

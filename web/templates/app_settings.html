@@ -1,0 +1,28 @@
+{{define "content"}}
+{{template "app_head" (dict "P" .Data.AppPage "CSRF" .CSRF)}}
+{{with .Data}}
+<form method="post" action="/apps/{{.App.Name}}/settings" class="stack narrow">
+  {{template "csrf" $.CSRF}}
+  <label>{{t "wizard.runtime"}}
+    <select name="runtime">{{$r := .App.Runtime}}{{range .Runtimes}}<option value="{{.}}"{{if eq . $r}} selected{{end}}>{{t (printf "runtime.%s" .)}}</option>{{end}}</select></label>
+  <label>{{t "wizard.branch"}} <input name="branch" value="{{.App.Branch}}" required></label>
+  <label>{{t "wizard.build"}} <input name="build_cmd" value="{{if .App.BuildCmd}}{{.App.BuildCmd}}{{end}}"></label>
+  <label>{{t "wizard.start"}} <input name="start_cmd" value="{{if .App.StartCmd}}{{.App.StartCmd}}{{end}}"></label>
+  <label>{{t "wizard.health"}} <input name="health_path" value="{{if .App.HealthPath}}{{.App.HealthPath}}{{end}}" placeholder="/health"></label>
+  <label>{{t "settings.health_timeout"}} <input name="health_timeout_s" type="number" min="1" max="600" value="{{.App.HealthTimeoutS}}" required></label>
+  <label>{{t "settings.static_dir"}} <input name="static_dir" value="{{if .App.StaticDir}}{{.App.StaticDir}}{{end}}" placeholder="dist"></label>
+  <label>{{t "settings.nice"}} <input name="nice" type="number" min="0" max="19" value="{{.App.Nice}}" required><small class="muted">{{t "settings.nice.help"}}</small></label>
+  <div class="row"><button class="btn primary" type="submit">{{t "settings.save"}}</button></div>
+</form>
+<section class="panel danger" aria-labelledby="dz-h">
+  <h2 id="dz-h">{{t "settings.danger"}}</h2>
+  <p>{{t "settings.danger.help"}}</p>
+  <form method="post" action="/apps/{{.App.Name}}/delete" class="stack narrow">
+    {{template "csrf" $.CSRF}}
+    <label>{{t "settings.danger.type"}} <code>{{.App.Name}}</code>
+      <input name="confirm" autocomplete="off" data-confirm-name="{{.App.Name}}" required></label>
+    <div class="row"><button class="btn danger" type="submit" data-needs-name disabled>{{t "settings.delete"}}</button></div>
+  </form>
+</section>
+{{end}}
+{{end}}
