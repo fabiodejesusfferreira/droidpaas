@@ -278,3 +278,24 @@ func TestSecureCookieBehindTrustedProxy(t *testing.T) {
 		t.Fatal("secure_cookies=never")
 	}
 }
+
+func TestLoginRateLimitIgnoresSpoofedForwardedFor(t *testing.T) {
+	p := newPanel(t)
+	for i := 1; i <= 5; i++ { // o cliente forja o início do cabeçalho; o túnel acrescenta o IP real no fim
+		c := p.client()
+		pg := c.get("/login")
+		m := loginTokRe.FindStringSubmatch(pg.Body)
+		r := c.post("/login", url.Values{"_csrf": {m[1]}, "username": {"admin"}, "password": {"errada-" + strings.Repeat("x", i)}},
+			"X-Forwarded-For", "10.0.0."+strings.Repeat("1", i)+", 203.0.113.7")
+		if r.StatusCode != 401 {
+			t.Fatalf("tentativa %d: %d", i, r.StatusCode)
+		}
+	}
+	c := p.client()
+	pg := c.get("/login")
+	m := loginTokRe.FindStringSubmatch(pg.Body)
+	r := c.post("/login", url.Values{"_csrf": {m[1]}, "username": {"admin"}, "password": {adminPass}}, "X-Forwarded-For", "10.9.9.9, 203.0.113.7")
+	if r.StatusCode != 429 {
+		t.Fatalf("IP forjado no início do X-Forwarded-For burlou o limite: %d", r.StatusCode)
+	}
+}

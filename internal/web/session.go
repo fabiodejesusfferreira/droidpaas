@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -64,10 +65,15 @@ func (s *Server) clientIP(r *http.Request) string {
 		host = r.RemoteAddr
 	}
 	if s.trustedPeer(r) {
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			first := strings.TrimSpace(strings.Split(xff, ",")[0])
-			if net.ParseIP(first) != nil {
-				return first
+		// o cliente controla o começo do X-Forwarded-For; só vale o que os proxies confiáveis acrescentaram no fim
+		hops := strings.Split(strings.Join(r.Header.Values("X-Forwarded-For"), ","), ",")
+		for i := len(hops) - 1; i >= 0; i-- {
+			ip := strings.TrimSpace(hops[i])
+			if net.ParseIP(ip) == nil {
+				break
+			}
+			if !slices.Contains(s.API.Cfg.HTTP.TrustedProxies, ip) {
+				return ip
 			}
 		}
 	}
