@@ -1,0 +1,58 @@
+{{define "content"}}
+{{template "app_head" (dict "P" .Data.AppPage "CSRF" .CSRF)}}
+{{with .Data}}
+{{if not .Connected}}
+<section class="panel" aria-labelledby="gh-h">
+  <h2 id="gh-h">{{t "github.title"}}</h2>
+  <p>{{t "github.intro"}}</p>
+  <form method="post" action="/apps/{{.App.Name}}/github" class="stack narrow">
+    {{template "csrf" $.CSRF}}
+    <label>{{t "github.url"}}
+      <input name="url" placeholder="https://github.com/dono/repositorio" required autocapitalize="none" spellcheck="false" aria-describedby="gh-url-help">
+      <small id="gh-url-help" class="muted">{{t "github.url.help"}}</small>
+    </label>
+    <label>{{t "github.branch"}}
+      <input name="branch" value="{{.App.Branch}}" required autocapitalize="none">
+    </label>
+    <div class="row"><button class="btn primary" type="submit">{{t "github.connect"}}</button></div>
+  </form>
+</section>
+{{else}}
+<section class="panel" aria-labelledby="gh-h">
+  <h2 id="gh-h">{{t "github.title"}}</h2>
+  <dl class="kv">
+    <div><dt>{{t "github.repo"}}</dt><dd class="wrap"><code>{{.Info.URL}}</code></dd></div>
+    <div><dt>{{t "github.branch"}}</dt><dd><code>{{.Info.Branch}}</code></dd></div>
+    <div><dt>{{t "github.last"}}</dt><dd>{{if .LastSync}}{{.LastSync}}{{else}}<span class="muted">{{t "github.never"}}</span>{{end}}</dd></div>
+    {{if .Info.LastError}}<div><dt>{{t "github.error"}}</dt><dd class="err-text wrap">{{.Info.LastError}}</dd></div>{{end}}
+  </dl>
+  <div class="row">
+    <form method="post" action="/apps/{{.App.Name}}/github/sync" class="inline">{{template "csrf" $.CSRF}}<button class="btn primary" type="submit">{{t "github.sync"}}</button></form>
+    <form method="post" action="/apps/{{.App.Name}}/github/disconnect" class="inline" data-confirm="{{t "github.disconnect.confirm"}}">{{template "csrf" $.CSRF}}<button class="btn" type="submit">{{t "github.disconnect"}}</button></form>
+  </div>
+  <p class="muted">{{t "github.overwrite"}}</p>
+</section>
+
+{{if .Info.Private}}
+<section class="panel" aria-labelledby="gh-key-h">
+  <h2 id="gh-key-h">{{t "github.key.title"}}</h2>
+  <p>{{t "github.key.help"}}</p>
+  <pre class="cmd" tabindex="0">{{.Info.DeployPub}}</pre>
+</section>
+{{end}}
+
+<section class="panel" aria-labelledby="gh-hook-h">
+  <h2 id="gh-hook-h">{{t "github.hook.title"}}</h2>
+  <p>{{t "github.hook.help"}}</p>
+  <dl class="kv">
+    <div><dt>Payload URL</dt><dd class="wrap"><code>{{.Webhook}}</code></dd></div>
+    <div><dt>Content type</dt><dd><code>application/json</code></dd></div>
+    <div><dt>Secret</dt><dd class="wrap"><button type="button" class="btn small ghost" hx-post="/apps/{{.App.Name}}/github/reveal" hx-target="this" hx-swap="outerHTML">{{t "env.reveal"}}</button></dd></div>
+    <div><dt>Events</dt><dd>{{t "github.hook.events"}}</dd></div>
+  </dl>
+  <form method="post" action="/apps/{{.App.Name}}/github/secret" class="inline" data-confirm="{{t "github.secret.confirm"}}">{{template "csrf" $.CSRF}}<button class="btn small ghost" type="submit">{{t "github.secret.rotate"}}</button></form>
+  {{if .Public}}<p class="flash warn">{{t "github.access"}} <code>/hooks/github/*</code></p>{{end}}
+</section>
+{{end}}
+{{end}}
+{{end}}

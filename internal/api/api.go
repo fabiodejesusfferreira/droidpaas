@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"droidpaas/internal/apps"
@@ -18,6 +19,7 @@ import (
 	"droidpaas/internal/crypt"
 	"droidpaas/internal/deploy"
 	"droidpaas/internal/events"
+	"droidpaas/internal/ghsrc"
 	"droidpaas/internal/gitsrv"
 	"droidpaas/internal/runit"
 	"droidpaas/internal/stats"
@@ -37,6 +39,8 @@ type Server struct {
 	Runit   runit.ServiceManager
 	Stats   *stats.Collector
 	Started time.Time
+	GH      *ghsrc.Service // criado sob demanda por GitHub()
+	ghOnce  sync.Once
 	// OnChange acorda o reconciliador depois de mudar o estado desejado.
 	OnChange func()
 }
@@ -69,6 +73,7 @@ func (s *Server) Routes(mux *http.ServeMux) {
 	s.registerDeploys(mux)
 	s.registerSSHKeys(mux)
 	s.registerGitHTTP(mux)
+	s.registerGitHub(mux)
 	mux.HandleFunc("GET /api/v1/backup", s.full(s.handleBackup))
 	mux.HandleFunc("GET /api/v1/me", s.full(s.handleMe))
 	mux.HandleFunc("GET /api/v1/system", s.full(s.handleSystem))

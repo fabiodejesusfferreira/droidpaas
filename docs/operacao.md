@@ -80,6 +80,35 @@ Abra `http://127.0.0.1:8090` no aparelho (ou o hostname do painel, veja §4) e e
 - **Configurações:** domínio base, hostname do painel, retenção, token do túnel, chaves SSH, tokens de API, troca de senha e eventos.
 - O painel não carrega nada de fora (sem CDN) e funciona em telas de 360 px, nos temas claro e escuro. Atrás do túnel, proteja-o também com Cloudflare Access.
 
+### 3.2 Publicar a partir do GitHub
+
+Em vez de `git push` para o aparelho, o app pode seguir um repositório do GitHub: a cada push na branch escolhida, o GitHub avisa o droidpaas (webhook), que busca o código e faz o deploy normal (com health check e rollback automático).
+
+**Pelo painel:** app → aba **GitHub**. **Pela CLI:**
+
+```bash
+droid github meu-app connect https://github.com/dono/repo --branch main     # repositório público
+droid github meu-app connect git@github.com:dono/repo.git                   # privado (gera uma deploy key)
+droid github meu-app            # mostra o estado e a URL do webhook
+droid github meu-app sync       # busca agora e faz deploy, sem esperar um push
+droid github meu-app rotate-secret
+droid github meu-app disconnect
+```
+
+Depois de ligar, no GitHub (repositório → Settings):
+
+1. **Privado:** *Deploy keys → Add deploy key*: cole a chave que o droidpaas mostrou e deixe *Allow write access* **desmarcado**.
+2. *Webhooks → Add webhook*: **Payload URL** = a URL mostrada (`https://painel.seudominio.com/hooks/github/meu-app`), **Content type** `application/json`, **Secret** = o segredo mostrado, evento **Just the push event**. O GitHub envia um `ping`; a entrega deve aparecer com ✔.
+
+O webhook precisa alcançar o droidpaas pela internet, ou seja, pelo túnel (§4). Se o painel está atrás da **Cloudflare Access**, libere **só** o caminho do webhook: Access → Applications → Add → Self-hosted, hostname `painel.seudominio.com`, **Path** `hooks/github/*`, política **Bypass** (Include: Everyone). O restante do painel continua protegido: confira abrindo `https://painel.seudominio.com` numa aba anônima. O caminho liberado só aceita pedidos com a assinatura HMAC do segredo do app (os demais recebem 401).
+
+Notas:
+- Só `github.com` é aceito (https, ou SSH para privados). O `git push` direto para o droidpaas de um app ligado ao GitHub é **sobrescrito** na próxima busca.
+- O segredo e a chave privada ficam cifrados com a `master.key`; a chave privada nunca é exibida.
+- A primeira conexão SSH com o GitHub confia na chave do servidor (TOFU) e a guarda em `~/droidpaas/etc/github_known_hosts`.
+- Falhas de busca aparecem na aba GitHub ("Último erro") e nos Eventos.
+- Entregas repetidas (o GitHub reenvia) são ignoradas; pushes em outras branches também.
+
 ### O que o deploy detecta
 
 `droidpaas.toml` (opcional, na raiz do repositório) > `Procfile` > convenções:

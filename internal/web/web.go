@@ -52,7 +52,7 @@ type View struct {
 }
 
 var pageFiles = []string{"login", "error", "dashboard", "app_new", "app_publish", "app_overview", "app_deployments", "app_deployment",
-	"app_env", "app_logs", "app_domains", "app_settings", "settings", "events"}
+	"app_env", "app_logs", "app_domains", "app_github", "app_settings", "settings", "events"}
 
 func New(a *api.Server, c *stats.Collector, log *slog.Logger) (*Server, error) {
 	s := &Server{API: a, Stats: c, Log: log, Now: time.Now, Sleep: time.Sleep,
@@ -120,6 +120,12 @@ func (s *Server) Routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /apps/{name}/domains", au(s.domainAdd))
 	mux.HandleFunc("POST /apps/{name}/domains/remove", au(s.domainRemove))
 
+	mux.HandleFunc("GET /apps/{name}/github", au(s.githubPage))
+	mux.HandleFunc("POST /apps/{name}/github", au(s.githubConnect))
+	mux.HandleFunc("POST /apps/{name}/github/sync", au(s.githubSync))
+	mux.HandleFunc("POST /apps/{name}/github/secret", au(s.githubSecret))
+	mux.HandleFunc("POST /apps/{name}/github/disconnect", au(s.githubDisconnect))
+	mux.HandleFunc("POST /apps/{name}/github/reveal", au(s.githubReveal))
 	mux.HandleFunc("GET /apps/{name}/settings", au(s.appSettings))
 	mux.HandleFunc("POST /apps/{name}/settings", au(s.appSettingsSave))
 	mux.HandleFunc("POST /apps/{name}/delete", au(s.appDelete))

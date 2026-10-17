@@ -262,3 +262,23 @@ func TestSettingsCommand(t *testing.T) {
 		t.Fatalf("%+v", r)
 	}
 }
+
+func TestGitHubCommand(t *testing.T) {
+	setup(t)
+	droid(t, "", "apps", "create", "blog").ok(t)
+	droid(t, "", "github", "blog").ok(t).has(t, "não está ligado ao GitHub")
+	if r := droid(t, "", "github", "blog", "connect", "file:///etc"); r.code != 1 || !strings.Contains(r.err, "endereço inválido") {
+		t.Fatalf("%d %s", r.code, r.err)
+	}
+	r := droid(t, "", "github", "blog", "connect", "git@github.com:acme/site.git", "--branch", "release").ok(t)
+	r.has(t, "branch release", "Deploy keys", "ssh-ed25519 ", "/hooks/github/blog", "application/json", "Secret:")
+	droid(t, "", "github", "blog", "show").ok(t).has(t, "ssh://git@github.com/acme/site.git", "release")
+	droid(t, "", "github", "blog", "rotate-secret").ok(t).has(t, "novo segredo:")
+	droid(t, "", "github", "blog", "disconnect").ok(t).has(t, "desligado")
+	if r := droid(t, "", "github", "blog", "disconnect"); r.code != 1 {
+		t.Fatalf("desligar duas vezes deveria falhar: %d", r.code)
+	}
+	if droid(t, "", "github").code != 2 || droid(t, "", "github", "blog", "connect").code != 2 {
+		t.Fatal("uso errado deveria ser 2")
+	}
+}

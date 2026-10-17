@@ -14,7 +14,7 @@ Pense num "Heroku/Dokku de bolso": um programa que usa menos de 20 MB de RAM e c
 
 ## O que você ganha
 
-- **Deploy por `git push`** (SSH ou HTTP): o build roda no aparelho e o log aparece no seu terminal.
+- **Deploy por `git push`** (SSH ou HTTP) **ou por webhook do GitHub** (a cada push no seu repositório): o build roda no aparelho e o log aparece no terminal e no painel.
 - **Node, Python, Go e sites estáticos** detectados sozinhos (ou configure com um `Procfile`/`droidpaas.toml`).
 - **Se um deploy falhar, nada quebra:** a versão anterior continua no ar, e dá para voltar a ela com um clique (rollback).
 - **Painel web** (celular e computador, tema claro/escuro): apps, deploys com log ao vivo, variáveis de ambiente (segredos mascarados), logs em tempo real, domínios, chaves SSH e o estado do aparelho (bateria, temperatura, RAM, disco).
@@ -105,6 +105,7 @@ droid deploys meu-app           # histórico de deploys
 droid rollback meu-app          # volta à versão anterior
 droid env meu-app set CHAVE=valor --secret --restart
 droid domains meu-app add meu-app.seudominio.com
+droid github meu-app connect https://github.com/dono/repo   # deploy a cada push no GitHub
 droid update                    # atualiza o droidpaas
 droid settings                  # configurações globais
 droid status                    # saúde do servidor

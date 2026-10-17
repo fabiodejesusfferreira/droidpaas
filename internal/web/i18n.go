@@ -9,7 +9,7 @@ var ptBR = map[string]string{
 	"a11y.skip": "Pular para o conteúdo", "nav.menu": "Menu", "nav.collapse": "Recolher menu", "nav.label": "Navegação principal", "nav.apps": "Apps",
 	"nav.new_app": "Novo app", "nav.events": "Eventos", "nav.settings": "Configurações", "nav.logout": "Sair", "theme.toggle": "Tema claro/escuro",
 	"tabs.label": "Seções do app", "tabs.overview": "Visão geral", "tabs.deployments": "Deploys", "tabs.environment": "Ambiente",
-	"tabs.logs": "Logs", "tabs.domains": "Domínios", "tabs.settings": "Configurações",
+	"tabs.logs": "Logs", "tabs.domains": "Domínios", "tabs.github": "GitHub", "tabs.settings": "Configurações",
 	"pager.older": "Mais antigos",
 
 	// login
@@ -29,7 +29,19 @@ var ptBR = map[string]string{
 	// status de deploy
 	"dstatus.queued": "na fila", "dstatus.running": "em andamento", "dstatus.succeeded": "concluído", "dstatus.failed": "falhou",
 	"dstatus.rolled_back": "revertido", "dstatus.cancelled": "cancelado", "dstatus.interrupted": "interrompido",
-	"trigger.git_push": "git push", "trigger.manual": "manual", "trigger.rollback": "rollback", "trigger.rebuild": "rebuild",
+	"github.title": "Publicar a partir do GitHub", "github.intro": "Ligue este app a um repositório do GitHub: a cada push na branch escolhida, o droidpaas busca o código e faz o deploy sozinho.",
+	"github.url": "Repositório", "github.url.help": "Público: https://github.com/dono/repo. Privado: git@github.com:dono/repo.git (o droidpaas cria uma chave só de leitura para você cadastrar no GitHub).",
+	"github.branch": "Branch", "github.connect": "Ligar ao GitHub", "github.repo": "Repositório", "github.last": "Última busca", "github.never": "ainda não", "github.error": "Último erro",
+	"github.sync": "Buscar agora e fazer deploy", "github.disconnect": "Desligar", "github.disconnect.confirm": "Desligar este app do GitHub? O código atual continua no ar.",
+	"github.overwrite": "Enquanto estiver ligado ao GitHub, a branch deste app é sobrescrita pelo que vem de lá: um git push direto para o droidpaas será desfeito na próxima busca.",
+	"github.key.title": "Passo 1: cadastre a deploy key", "github.key.help": "No GitHub: repositório → Settings → Deploy keys → Add deploy key. Cole a chave abaixo e deixe \"Allow write access\" desmarcado.",
+	"github.hook.title": "Passo 2: crie o webhook", "github.hook.help": "No GitHub: repositório → Settings → Webhooks → Add webhook, com estes valores:", "github.hook.events": "Just the push event",
+	"github.secret.rotate": "Trocar o segredo", "github.secret.confirm": "Trocar o segredo? Você precisará colar o novo no webhook do GitHub.", "github.secret.rotated": "Segredo trocado. Cole o novo no webhook do GitHub.",
+	"github.access":    "O painel é público: libere sem login (Cloudflare Access → política Bypass) somente o caminho",
+	"github.connected": "App ligado ao GitHub.", "github.disconnected": "App desligado do GitHub.",
+	"github.err.url": "Endereço inválido. Use https://github.com/dono/repo ou git@github.com:dono/repo.git.", "github.err.branch": "Nome de branch inválido.",
+	"github.err.none": "Este app não está ligado ao GitHub.", "github.err.fetch": "Não consegui buscar o código no GitHub: %s",
+	"trigger.git_push": "git push", "trigger.github": "GitHub", "trigger.manual": "manual", "trigger.rollback": "rollback", "trigger.rebuild": "rebuild",
 
 	// dashboard e dispositivo
 	"dash.empty":   "Nenhum app ainda. Crie o primeiro e publique com git push.",

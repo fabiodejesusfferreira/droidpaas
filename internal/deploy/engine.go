@@ -113,7 +113,7 @@ func (e *Engine) Enqueue(ctx context.Context, appName, trigger string, o Enqueue
 	}
 	d = store.Deploy{AppID: a.ID, Trigger: trigger, Rebuild: o.Rebuild}
 	switch trigger {
-	case "git_push":
+	case "git_push", "github":
 		d.GitSHA, d.GitRef = o.SHA, first(o.Ref, a.Branch)
 	case "manual", "rebuild":
 		d.Rebuild = d.Rebuild || trigger == "rebuild"

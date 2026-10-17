@@ -24,6 +24,7 @@ const usage = `uso: droid [--json] <comando> [args]
   keys [ls | add ARQUIVO.pub [--name N] | rm ID]
   tokens [ls | create NOME [--scope full|git] | rm ID]
   tunnel set --token T | --clear
+  github APP [show | connect URL [--branch B] | sync | rotate-secret | disconnect]
   settings [set CHAVE=VALOR...]    (base_domain, panel_hostname, keep_releases, git_http_enabled)
   status
   backup [--out ARQUIVO] [--with-key]
