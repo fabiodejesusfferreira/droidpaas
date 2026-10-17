@@ -148,4 +148,4 @@ docs/                   operação, TSD e um README por fase
 
 ## Licença
 
-[MIT](LICENSE).
+Código sob a licença [MIT](LICENSE). O nome e a logo **não** estão incluídos nessa licença: veja a [política de marca](TRADEMARKS.md). Licenças de terceiros: [NOTICE](NOTICE).

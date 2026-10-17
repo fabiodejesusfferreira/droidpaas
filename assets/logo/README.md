@@ -20,4 +20,4 @@ O **código** deste repositório é MIT (veja `LICENSE`). **O nome "droidpaas" e
 - Não pode: usar o nome ou a logo de um jeito que sugira que seu produto, fork ou serviço é o droidpaas oficial ou é endossado por ele, nem alterar a logo para esse fim.
 - Fork que segue como projeto próprio deve ter **outro nome e outra logo**.
 
-Em caso de dúvida, abra uma issue.
+A política completa (em inglês) está em [`TRADEMARKS.md`](../../TRADEMARKS.md). Em caso de dúvida, abra uma issue.

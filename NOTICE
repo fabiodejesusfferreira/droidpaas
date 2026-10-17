@@ -1,0 +1,45 @@
+droidpaas
+Copyright (c) 2026 Fábio de Jesus
+
+Este produto inclui software desenvolvido por terceiros. O código do droidpaas é MIT (veja LICENSE);
+o nome e a logo "droidpaas" NÃO estão sob a MIT (veja assets/logo/README.md e TRADEMARKS.md).
+Os textos completos das licenças abaixo estão em THIRD_PARTY_LICENSES.md.
+
+This product includes software developed by third parties. The droidpaas source code is MIT-licensed
+(see LICENSE); the "droidpaas" name and logo are NOT (see assets/logo/README.md and TRADEMARKS.md).
+Full license texts are in THIRD_PARTY_LICENSES.md.
+
+== Compilado nos binários droidd e droid / Compiled into the binaries ==
+
+- The Go standard library and runtime (go1.26.0) — BSD-3-Clause — Copyright The Go Authors — https://go.dev
+- github.com/dustin/go-humanize v1.0.1 — MIT — https://pkg.go.dev/github.com/dustin/go-humanize
+- github.com/google/uuid v1.6.0 — BSD-3-Clause — https://pkg.go.dev/github.com/google/uuid
+- github.com/pelletier/go-toml/v2 v2.4.3 — MIT — https://pkg.go.dev/github.com/pelletier/go-toml/v2
+- github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec — BSD-3-Clause — https://pkg.go.dev/github.com/remyoudompheng/bigfft
+- golang.org/x/crypto v0.58.0 — BSD-3-Clause — https://pkg.go.dev/golang.org/x/crypto
+- golang.org/x/sys v0.49.0 — BSD-3-Clause — https://pkg.go.dev/golang.org/x/sys
+- golang.org/x/term v0.47.0 — BSD-3-Clause — https://pkg.go.dev/golang.org/x/term
+- modernc.org/libc v1.77.1 — BSD-3-Clause — https://pkg.go.dev/modernc.org/libc
+- modernc.org/mathutil v1.7.1 — BSD-3-Clause — https://pkg.go.dev/modernc.org/mathutil
+- modernc.org/memory v1.12.1 — BSD-3-Clause — https://pkg.go.dev/modernc.org/memory
+- modernc.org/sqlite v1.60.1 — BSD-3-Clause — https://pkg.go.dev/modernc.org/sqlite
+
+== Embutido no painel web / Embedded in the web panel ==
+
+- htmx 2.0.4 (web/static/htmx.min.js) — 0BSD — Copyright (c) 2020, Big Sky Software — https://htmx.org
+
+== Na arte da logo / In the logo artwork ==
+
+- Noto Sans Bold — SIL Open Font License 1.1 — Copyright 2022 The Noto Project Authors.
+  Os contornos das letras do wordmark foram convertidos em curvas (assets/logo/wordmark*.svg).
+  The wordmark letter outlines were converted to curves. https://openfontlicense.org
+
+== Usados em tempo de execução, NÃO distribuídos com o droidpaas / Used at runtime, NOT bundled ==
+
+Instalados separadamente pelo usuário (pkg install) e comunicados por processo/API: Caddy (Apache-2.0),
+cloudflared (Apache-2.0), runit (BSD-3-Clause), OpenSSH (BSD), Git (GPL-2.0), Go toolchain (BSD-3-Clause),
+Node.js (MIT) e Python (PSF). / Installed separately by the user and used as external programs.
+
+"Android" e o robô Android são marcas ou obras da Google LLC; o droidpaas não é afiliado nem endossado pela Google,
+pela Termux ou pela Cloudflare. / "Android" and the Android robot are trademarks or works of Google LLC;
+droidpaas is not affiliated with or endorsed by Google, Termux or Cloudflare.
