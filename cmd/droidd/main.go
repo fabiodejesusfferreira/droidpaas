@@ -6,7 +6,8 @@ import (
 	"os"
 )
 
-const version = "0.1.0-dev"
+// version é sobrescrita na compilação (-ldflags "-X main.version=$(git describe --tags --always)").
+var version = "0.1.0-dev"
 
 const usage = `uso: droidd <comando> [flags]
 

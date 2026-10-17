@@ -129,19 +129,29 @@ droid backup --out meu-backup.tar.gz --with-key   # inclui a master.key (SENSÍV
 
 ## 6. Atualização
 
-O painel e o servidor são **um só programa** (a interface vem embutida no binário). Por isso qualquer mudança, inclusive só de tela, exige recompilar e reiniciar o `droidd`:
+O painel e o servidor são **um só programa** (a interface vem embutida no binário). Por isso qualquer mudança, inclusive só de tela, exige recompilar e reiniciar o `droidd`. O comando `droid update` faz tudo:
+
+```bash
+droid update --check     # há versão nova? o que mudou?
+droid update             # atualiza
+droid update --ref v0.2.0   # uma versão específica (tag, branch ou commit)
+```
+
+O que ele faz, em ordem: confere que `~/droidpaas-src` é um clone do Git sem mudanças locais, busca o GitHub, traz a versão nova, **compila numa pasta ao lado** (se falhar, o código volta ao que estava e nada é trocado), guarda os binários atuais como `droidd.prev` e `droid.prev`, troca, reinicia o `droidd` e espera o painel responder. **Se o painel não voltar em ~40 s, restaura os binários e o código anteriores** e reinicia de novo. Depois, recarregue o painel no navegador (Ctrl+F5).
+
+- `~/droidpaas-src` é o clone (`git clone … droidpaas-src`); `~/droidpaas` guarda dados e binários. Mantenha as duas separadas. Outro lugar: `--src DIR` ou `DP_SRC`.
+- Os apps, o Caddy e o túnel **continuam no ar** durante o restart do `droidd` (são serviços runit independentes). Um deploy em andamento no momento do restart é interrompido.
+- Migrações de banco são aplicadas ao subir, com backup prévio (`droidpaas.db.bak-<data>`). A volta automática restaura o **programa**, não o banco: se a versão nova migrou o banco e falhou, restaure o backup do banco (o comando avisa).
+- Antes de uma atualização grande: `droid backup --out antes.tar.gz --with-key`.
+- Conferir: `droid status` e `droid version` (mostra a tag/commit instalado).
+
+Manual (equivale ao `droid update`, sem a volta automática):
 
 ```bash
 cd ~/droidpaas-src && git pull && go build -o ~/droidpaas/bin/ ./cmd/... && sv restart droidd
 ```
 
-(`~/droidpaas-src` é a pasta do clone; `~/droidpaas` guarda os dados e os binários instalados. Mantenha as duas separadas.) Depois, recarregue o painel no navegador (Ctrl+F5, ou feche e abra a aba) para não usar arquivos antigos em cache.
-
-- Os apps, o Caddy e o túnel **continuam no ar** durante o restart do `droidd` (são serviços runit independentes).
-- Migrações de banco são aplicadas ao subir, com backup prévio (`droidpaas.db.bak-<data>`). **Não há volta automática de versão:** para voltar, restaure o backup do banco e recompile a versão anterior (`git checkout <tag>`).
-- Antes de uma atualização grande, faça `droid backup --out antes.tar.gz --with-key`.
-- Para uma versão específica em vez da mais recente: `git fetch --tags && git checkout v0.2.0` antes do `go build`.
-- Confira o resultado com `droid status` e `droid version`.
+Quem instalou antes do `droid update` existir precisa fazer uma atualização **manual** uma vez (o `droid` antigo não tem o comando). Se `~/droidpaas-src` não for um clone do Git, o `droid update` explica como refazer.
 
 ## 7. Checklist do aparelho (24/7)
 

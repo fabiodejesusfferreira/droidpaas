@@ -7,7 +7,8 @@ import (
 	"os"
 )
 
-const version = "0.1.0-dev"
+// version é sobrescrita na compilação (-ldflags "-X main.version=$(git describe --tags --always)").
+var version = "0.1.0-dev"
 
 const usage = `uso: droid [--json] <comando> [args]
 
@@ -26,6 +27,7 @@ const usage = `uso: droid [--json] <comando> [args]
   settings [set CHAVE=VALOR...]    (base_domain, panel_hostname, keep_releases, git_http_enabled)
   status
   backup [--out ARQUIVO] [--with-key]
+  update [--check] [--ref TAG] [--force]   atualiza o droidpaas pelo clone (~/droidpaas-src) e volta atrás se falhar
   version
 `
 

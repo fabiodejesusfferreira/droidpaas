@@ -49,7 +49,7 @@ func (c *cli) dispatch(args []string) int {
 		"login": c.login, "apps": c.apps, "start": c.lifecycle("start"), "stop": c.lifecycle("stop"), "restart": c.lifecycle("restart"),
 		"deploy": c.deploy, "rollback": c.rollback, "logs": c.logs, "deploys": c.deploys, "deploy-logs": c.deployLogs,
 		"env": c.env, "domains": c.domains, "keys": c.keys, "tokens": c.tokens, "tunnel": c.tunnel, "status": c.status,
-		"backup": c.backup, "settings": c.settings,
+		"backup": c.backup, "settings": c.settings, "update": c.update,
 		"version": func([]string) error { fmt.Fprintln(c.out, version); return nil },
 	}
 	fn, ok := cmds[rest[0]]

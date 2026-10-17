@@ -105,6 +105,7 @@ droid deploys meu-app           # histórico de deploys
 droid rollback meu-app          # volta à versão anterior
 droid env meu-app set CHAVE=valor --secret --restart
 droid domains meu-app add meu-app.seudominio.com
+droid update                    # atualiza o droidpaas
 droid settings                  # configurações globais
 droid status                    # saúde do servidor
 ```
@@ -112,7 +113,8 @@ droid status                    # saúde do servidor
 Para **atualizar** para uma versão nova (inclusive mudanças no painel, que vem embutido no programa):
 
 ```bash
-cd ~/droidpaas-src && git pull && go build -o ~/droidpaas/bin/ ./cmd/... && sv restart droidd
+droid update --check    # só diz se há novidade e o que mudou
+droid update            # busca, compila, troca e reinicia; se o painel não voltar, restaura a versão anterior
 ```
 
 Seus apps e o túnel continuam no ar durante a atualização.

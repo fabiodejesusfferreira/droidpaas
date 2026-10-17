@@ -42,7 +42,7 @@ have=$(go env GOVERSION | sed 's/^go//')
 
 say "Compilando no aparelho"
 mkdir -p "$HOME_DIR/bin"
-go build -o "$HOME_DIR/bin/" ./cmd/...
+go build -ldflags "-X main.version=$(git describe --tags --always 2>/dev/null || echo 0.1.0-dev)" -o "$HOME_DIR/bin/" ./cmd/...
 ls -l "$HOME_DIR/bin"
 
 say "droidd init"
