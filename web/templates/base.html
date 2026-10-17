@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"selfRequestsOnly":true}'>
-<title>{{if .Title}}{{.Title}} · {{end}}DroidPaaS</title>
+<title>{{if .Title}}{{.Title}} · {{end}}droidpaas</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/static/app.css?v={{.Version}}">
 <script src="/static/htmx.min.js?v=2.0.4" defer></script>
@@ -22,7 +22,7 @@
 <input type="checkbox" id="nav-toggle" class="nav-toggle">
 <header class="topbar">
   <label for="nav-toggle" class="menu-btn" title="{{t "nav.menu"}}"><span aria-hidden="true">☰</span><span class="sr">{{t "nav.menu"}}</span></label>
-  <a class="brand" href="/">DroidPaaS</a>
+  <a class="brand" href="/">{{template "logo"}}<span>droidpaas</span></a>
   <a class="btn primary small" href="/apps/new">+ {{t "nav.new_app"}}</a>
 </header>
 <nav class="sidebar" aria-label="{{t "nav.label"}}">

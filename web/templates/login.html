@@ -1,6 +1,6 @@
 {{define "content"}}
 <div class="login">
-  <h1>DroidPaaS</h1>
+  <h1 class="brand-title">{{template "logo"}}<span>droidpaas</span></h1>
   <form method="post" action="/login" class="stack">
     <input type="hidden" name="_csrf" value="{{.Data.CSRF}}">
     <input type="hidden" name="next" value="{{.Data.Next}}">

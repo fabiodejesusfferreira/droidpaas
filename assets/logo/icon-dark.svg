@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="331" height="365" viewBox="45 68 331 365" role="img"><title>droidpaas</title>
+<path transform="matrix(1 0 0 1 53.025 115.988)" d="M0 157.407C0 70.474 70.474 0 157.407 0C244.341 0 314.815 70.474 314.815 157.407L0 157.407Z" fill="#5B8CFF"/>
+<path transform="matrix(-0.447 -0.894 0.894 -0.447 115.988 147.469)" d="M0 0L70.395 0" fill="none" stroke="#5B8CFF" stroke-width="15.747" stroke-linecap="round"/>
+<path transform="matrix(0.447 -0.894 0.894 0.447 304.877 147.469)" d="M0 0L70.395 0" fill="none" stroke="#5B8CFF" stroke-width="15.747" stroke-linecap="round"/>
+<path transform="matrix(1 0 0 1 131.154 186.821)" d="M0 0L34.63 25.972L0 51.944" fill="none" stroke="#0B1220" stroke-width="18.896" stroke-linecap="round" stroke-linejoin="round"/>
+<path transform="matrix(1 0 0 1 254.08 215.154)" d="M0 0L34.63 0" fill="none" stroke="#0B1220" stroke-width="18.896" stroke-linecap="round"/>
+<path transform="matrix(1 0 0 1 53.025 374.136)" d="M12.597 0L302.217 0C309.175 0 314.815 5.64 314.815 12.597L314.815 37.773C314.815 44.73 309.175 50.37 302.217 50.37L12.597 50.37C5.64 50.37 0 44.73 0 37.773L0 12.597C0 5.64 5.64 0 12.597 0Z" fill="#5B8CFF"/>
+<circle cx="330.061" cy="399.321" r="7.87" fill="#0B1220"/>
+<path transform="matrix(1 0 0 1 53.025 302.877)" d="M12.597 0L302.217 0C309.175 0 314.815 5.64 314.815 12.597L314.815 37.773C314.815 44.73 309.175 50.37 302.217 50.37L12.597 50.37C5.64 50.37 0 44.73 0 37.773L0 12.597C0 5.64 5.64 0 12.597 0Z" fill="#5B8CFF"/>
+<circle cx="330.061" cy="330.061" r="7.87" fill="#0B1220"/>
+</svg>

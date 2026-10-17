@@ -29,7 +29,7 @@ func TestUnauthenticatedIsRedirectedToLogin(t *testing.T) { // AT-20
 	if r := c.post("/logout", url.Values{}); r.StatusCode != 303 || !strings.HasPrefix(r.loc(), "/login") {
 		t.Fatalf("POST sem sessão: %d %q", r.StatusCode, r.loc())
 	}
-	c.get("/login").has(t, "DroidPaaS", `name="username"`, `name="password"`)
+	c.get("/login").has(t, "droidpaas", `name="username"`, `name="password"`)
 	if r := c.get("/static/app.css"); r.StatusCode != 200 || !strings.Contains(r.Body, "--primary") {
 		t.Fatalf("assets devem ser públicos: %d", r.StatusCode)
 	}

@@ -1,4 +1,9 @@
-# DroidPaaS
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/wordmark-dark.svg">
+    <img src="assets/logo/wordmark.svg" alt="droidpaas" height="90">
+  </picture>
+</p>
 
 **Transforme um celular Android antigo no seu próprio servidor de aplicações.**
 Você dá `git push` e o app entra no ar, com domínio próprio e um painel web para acompanhar tudo. Sem root, sem Docker, sem nuvem paga: roda direto no [Termux](https://termux.dev).

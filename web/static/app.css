@@ -23,7 +23,10 @@ code { background: var(--code-bg); padding: .1em .35em; border-radius: 5px; over
 
 /* layout: coluna no celular, sidebar fixa em telas largas */
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: .75rem; padding: .5rem 1rem; background: var(--surface); border-bottom: 1px solid var(--border); }
-.brand { font-weight: 700; text-decoration: none; color: var(--text); margin-right: auto; }
+.brand, .brand-title { display: inline-flex; align-items: center; gap: .5rem; font-weight: 700; text-decoration: none; color: var(--text); }
+.brand { margin-right: auto; } .logo { height: 1.6em; width: auto; flex: none; }
+.lm { fill: var(--primary); } .lms { fill: none; stroke: var(--primary); stroke-width: 15.747; stroke-linecap: round; }
+.ld { fill: var(--primary-text); } .lds { fill: none; stroke: var(--primary-text); stroke-width: 18.896; stroke-linecap: round; stroke-linejoin: round; }
 .menu-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; font-size: 1.4rem; cursor: pointer; border-radius: 8px; }
 .nav-toggle { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .nav-toggle:focus-visible ~ .topbar .menu-btn { outline: 3px solid var(--focus); }
