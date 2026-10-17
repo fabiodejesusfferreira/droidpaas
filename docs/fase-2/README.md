@@ -147,7 +147,7 @@ AT-01…AT-12 no M22 · RNF-01/02 medidos · soak de 72 h sem mortes não intenc
 
 **Soak de 72 h ⏳ em andamento:** iniciado em `2026-10-13T01:35Z` (22:35 em Brasília de 12/10), término previsto `2026-10-16T01:35Z`, com `scripts/soak/soak.sh` (apps `soaknode`, `soakpy`, `soakgo`, `soaksite`; deploy a cada 4 h, restart a cada 3 h, `kill -9` a cada 8 h). Saídas em `~/soak/` no aparelho; resumo com `python3 ~/droidpaas-src/scripts/soak/summary.py`. Aparelho na tomada (91 %, 37 °C no início).
 
-**Túnel público com domínio (RF-16) ☑:** validado na Fase 3 com `dejesusdevts.com` (ver docs/fase-3).
+**Túnel público com domínio (RF-16) ☑:** validado na Fase 3 com `seudominio.com` (ver docs/fase-3).
 
 ### Soak de 72 h — resultado (colhido em 2026-10-16)
 
@@ -172,7 +172,7 @@ Instalação real no M22 (`droidd` + `dp-caddy` + 4 apps de exemplo), de `2026-1
 - Os 2 `proxy.apply_failed` foram `connection refused` na Admin API do Caddy **logo depois do start** (na instalação e no reboot). Era ruído: o Caddy já sobe com o `caddy.json` certo. Agora uma falha dentro dos primeiros 20 s de vida do Caddy não gera erro nem evento.
 - 1 aviso `saída inesperada do sv: unable to open supervise/ok` ao criar um app (o `runsv` ainda não tinha assumido o serviço). Agora é `ErrNotReady` e o reconciliador espera o próximo ciclo.
 - O WAL do SQLite ficou em 3,2 MB: passou a usar `journal_size_limit(16 MiB)`.
-- O IP do aparelho mudou por DHCP durante o teste (192.168.1.7 → .4): para acesso remoto estável use um nome (Tailscale/mDNS) ou reserve o IP no roteador.
+- O IP do aparelho mudou por DHCP durante o teste (um IP da LAN para outro): para acesso remoto estável use um nome (Tailscale/mDNS) ou reserve o IP no roteador.
 - O Go do aparelho foi atualizado de 1.27.1 para 1.27.2 sem impacto.
 
 Regressão depois dessas correções, no aparelho: 2D 9 · 2E 22 · 2F 29 · 2G 24 · 2H 44 · 2I 26 verificações, todas verdes.

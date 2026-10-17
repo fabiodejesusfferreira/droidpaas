@@ -100,7 +100,7 @@ Limitações conhecidas: dependências nativas de npm/pip sem binário para Andr
 
 ## 4. Túnel e domínios (Cloudflare)
 
-O DroidPaaS sobe o `cloudflared` em **modo token**; você cria o túnel no painel da Cloudflare (validado com `dejesusdevts.com`).
+O DroidPaaS sobe o `cloudflared` em **modo token**; você cria o túnel no painel da Cloudflare (validado com `seudominio.com`).
 
 1. Zero Trust (`one.dash.cloudflare.com`) → Networks → Tunnels → Create a tunnel → Cloudflared. Copie só o **token** (a parte `eyJ…` do comando mostrado) e **não** rode os comandos da tela.
 2. No aparelho: `pkg install cloudflared` (se faltar) e `droid tunnel set --token <token>` (o token é guardado cifrado e entregue ao `cloudflared` por arquivo `0600`, nunca na linha de comando). `droid status` deve mostrar o túnel `connected`.
