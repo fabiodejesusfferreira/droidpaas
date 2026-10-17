@@ -8,7 +8,7 @@
 | **Escopo deste documento** | Fases 1, 2 e 3 (Prova de Conceito, MVP sem painel, Painel web) |
 | **Dispositivo-alvo de referência** | Samsung Galaxy M22, 4 GB de RAM (aparelho de testes/sandbox) |
 | **Plataforma** | Android + Termux (sem root) |
-| **Status das premissas** | V-01…V-15 avaliadas na Fase 1 (resultados em §2.5 e em `docs/fase-1/poc-report.md`). Pendente: V-05 Parte B (token + wildcard + SSE pelo túnel nomeado), que exige um domínio na Cloudflare. |
+| **Status das premissas** | V-01…V-15 avaliadas na Fase 1 (resultados em §2.5 e em `docs/fase-1/poc-report.md`). V-05 Parte B validada na Fase 3 (2026-10-17): token, rotas por hostname e acesso pelo túnel nomeado com domínio próprio; o wildcard `*` não foi usado (o domínio raiz já serve outro site) e o certificado gratuito cobre só um nível de subdomínio. Falta só a confirmação visual do SSE do deploy pelo túnel. |
 
 > **Aviso de honestidade técnica:** este documento descreve um design, não um sistema já testado. Nomes de pacotes, comportamentos do Termux/Android e números de desempenho são **hipóteses** até a Fase 1 comprová-las. Os limites numéricos (RAM, tempo, temperatura) são **metas propostas**, não medições.
 
