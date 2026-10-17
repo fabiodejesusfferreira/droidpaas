@@ -28,7 +28,7 @@
 
 **Túnel público com domínio (RF-16, V-05 Parte B) — validado em 2026-10-17** com `dejesusdevts.com`: túnel nomeado `connected` no M22; rotas `painel.` e `ola.` (hostname a hostname, porque a raiz já serve um portfólio); `ola.dejesusdevts.com` responde 200 em ~0,3 s pela internet; `painel.` atrás de Cloudflare Access (302 para o login sem sessão; após login por código o painel abre com bateria, RAM e disco reais em navegador desktop). Cookie `Secure` atrás do túnel confirmado (`dp_login_csrf` com `Secure`). Primeiro deploy real (`git push` por SSH a partir do Termux): `succeeded` em 8 s. Logs de runtime ao vivo (SSE) pelo túnel nomeado + Access confirmados pelo usuário no navegador desktop: a linha `GET /teste-ao-vivo` apareceu em até 2 s (AT-25). Deploy #2 (rebuild pelo botão) concluído e exibido no painel.
 
-Não coberto pelo roteiro automático (conferir à mão ao usar): AT-26 (rollback pelo botão) e AT-30 (remoção do app) estão nos testes de handler, mas não no `3-panel.sh`; wizard em 3 passos idem. Túnel/SSE pelo túnel nomeado segue dependendo do domínio na Cloudflare.
+Conferidos à mão pelo usuário no aparelho real (fora do `3-panel.sh`): AT-26 (rollback pelo botão) e AT-30 (remoção de um app descartável) funcionaram; o assistente em 3 passos criou o app e a página de publicação orientou o `git push`. Túnel/SSE pelo túnel nomeado segue dependendo do domínio na Cloudflare.
 
 
 ## Decisões
