@@ -79,5 +79,11 @@ func TestColorContrastAA(t *testing.T) {
 				t.Errorf("tema %s: --%s (%s) sobre --%s (%s) = %.2f:1 (< 4,5:1)", name, p[0], fg, p[1], bg, r)
 			}
 		}
+		// bordas de campos e botões são componentes de UI: WCAG 1.4.11, 3:1
+		for _, bg := range []string{"bg", "surface"} {
+			if r := ratio(th["border-strong"], th[bg]); r < 3 {
+				t.Errorf("tema %s: --border-strong sobre --%s = %.2f:1 (< 3:1)", name, bg, r)
+			}
+		}
 	}
 }

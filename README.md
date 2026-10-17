@@ -45,12 +45,12 @@ pkg update && pkg install -y git golang openssh runit termux-services caddy
 **2. Baixe e instale o DroidPaaS**
 
 ```bash
-git clone https://github.com/fabiodejesusfferreira/droidpaas.git
-cd droidpaas
+git clone https://github.com/fabiodejesusfferreira/droidpaas.git droidpaas-src
+cd droidpaas-src
 sh scripts/install.sh
 ```
 
-O instalador compila o programa no próprio aparelho (leva alguns minutos), pede um **usuário e uma senha de administrador** (mínimo 12 caracteres) e mostra, **uma única vez**, o seu primeiro token de API. Guarde os dois num gerenciador de senhas.
+O código fica em `~/droidpaas-src` (guarde essa pasta: é ela que você usa para atualizar) e os dados do servidor ficam em `~/droidpaas`. O instalador compila o programa no próprio aparelho (leva alguns minutos), pede um **usuário e uma senha de administrador** (mínimo 12 caracteres) e mostra, **uma única vez**, o seu primeiro token de API. Guarde os dois num gerenciador de senhas.
 
 **3. Reabra o Termux** (feche e abra de novo) para o gerenciador de serviços subir. Depois confira:
 
@@ -108,6 +108,14 @@ droid domains meu-app add meu-app.seudominio.com
 droid settings                  # configurações globais
 droid status                    # saúde do servidor
 ```
+
+Para **atualizar** para uma versão nova (inclusive mudanças no painel, que vem embutido no programa):
+
+```bash
+cd ~/droidpaas-src && git pull && go build -o ~/droidpaas/bin/ ./cmd/... && sv restart droidd
+```
+
+Seus apps e o túnel continuam no ar durante a atualização.
 
 Guia completo (portas, túnel, backup, atualização, problemas comuns): [docs/operacao.md](docs/operacao.md).
 

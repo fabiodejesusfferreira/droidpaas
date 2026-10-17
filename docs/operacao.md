@@ -15,7 +15,7 @@ Guia para instalar o DroidPaaS num aparelho Android com Termux e usá-lo pela CL
 No Termux, com o código do projeto no aparelho:
 
 ```bash
-cd droidpaas
+cd droidpaas-src      # o clone, feito com: git clone <repositório> droidpaas-src
 sh scripts/install.sh
 ```
 
@@ -129,11 +129,19 @@ droid backup --out meu-backup.tar.gz --with-key   # inclui a master.key (SENSÍV
 
 ## 6. Atualização
 
+O painel e o servidor são **um só programa** (a interface vem embutida no binário). Por isso qualquer mudança, inclusive só de tela, exige recompilar e reiniciar o `droidd`:
+
 ```bash
-cd droidpaas && git pull && go build -o ~/droidpaas/bin/ ./cmd/... && sv restart droidd
+cd ~/droidpaas-src && git pull && go build -o ~/droidpaas/bin/ ./cmd/... && sv restart droidd
 ```
 
-Os apps, o Caddy e o túnel **continuam no ar** durante o restart do `droidd` (são serviços runit independentes). Migrações de banco são aplicadas ao subir, com backup prévio.
+(`~/droidpaas-src` é a pasta do clone; `~/droidpaas` guarda os dados e os binários instalados. Mantenha as duas separadas.) Depois, recarregue o painel no navegador (Ctrl+F5, ou feche e abra a aba) para não usar arquivos antigos em cache.
+
+- Os apps, o Caddy e o túnel **continuam no ar** durante o restart do `droidd` (são serviços runit independentes).
+- Migrações de banco são aplicadas ao subir, com backup prévio (`droidpaas.db.bak-<data>`). **Não há volta automática de versão:** para voltar, restaure o backup do banco e recompile a versão anterior (`git checkout <tag>`).
+- Antes de uma atualização grande, faça `droid backup --out antes.tar.gz --with-key`.
+- Para uma versão específica em vez da mais recente: `git fetch --tags && git checkout v0.2.0` antes do `go build`.
+- Confira o resultado com `droid status` e `droid version`.
 
 ## 7. Checklist do aparelho (24/7)
 
