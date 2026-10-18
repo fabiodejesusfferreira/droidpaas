@@ -142,6 +142,16 @@ Seus apps e o túnel continuam no ar durante a atualização.
 
 Guia completo (portas, túnel, backup, atualização, problemas comuns): [docs/operacao.md](docs/operacao.md).
 
+## O que vem a seguir
+
+Prioridades atuais (análise completa, com o que foi verificado e o que não foi, em [docs/roadmap.md](docs/roadmap.md)):
+
+1. `droid doctor`: confere o ambiente do Termux e diz como corrigir cada problema.
+2. Deploy por polling do GitHub, sem precisar de domínio nem de webhook.
+3. Alertas (crash loop, deploy falho, temperatura) e *heartbeat* para saber que o servidor caiu.
+4. 2FA no painel e backup fora do aparelho, incluindo os dados dos apps.
+5. App Android que instala e inicia tudo por botões ([planejamento](docs/planejamento-apk.md)).
+
 ## Como o projeto foi construído
 
 O desenvolvimento foi dividido em fases, cada uma com testes e medições no aparelho real:
