@@ -12,6 +12,26 @@ Pense num "Heroku/Dokku de bolso": um programa que usa menos de 20 MB de RAM e c
 
 > Testado de verdade num Samsung Galaxy M22 (4 GB de RAM, Android 13): 72 horas seguidas sem nenhuma queda e painel respondendo em cerca de 40 ms. Os números e como foram medidos estão em [docs/fase-2](docs/fase-2/README.md) e [docs/fase-3](docs/fase-3/README.md).
 
+## Highlights
+
+<p align="center">
+  <img src="docs/img/painel-desktop-dashboard.png" alt="Painel no computador: estado do aparelho (bateria, RAM, disco) e os apps com o estado de cada um" width="49%">
+  <img src="docs/img/painel-desktop-app.png" alt="Painel no computador: página de um app com a release atual, o endereço do git e os últimos deploys" width="49%">
+</p>
+
+<p align="center">
+  <img src="docs/img/painel-mobile-dashboard.png" alt="Painel no celular: dashboard com o estado do aparelho e os apps" width="24%">
+  &nbsp;&nbsp;
+  <img src="docs/img/painel-mobile-app.png" alt="Painel no celular: página de um app com release atual e botões de deploy, reiniciar e parar" width="24%">
+</p>
+
+<p align="center"><sub>Painel em tema escuro, no computador e no celular. Dados fictícios de demonstração.</sub></p>
+
+- **O aparelho à vista:** bateria, temperatura, RAM e disco no topo, para saber se o servidor está saudável.
+- **Cada app num relance:** estado, runtime, release, endereço e uso de memória e CPU.
+- **Deploys sob controle:** histórico com origem, commit e duração; falhou? a versão anterior segue no ar.
+- **Do sofá ao escritório:** o mesmo painel se adapta ao celular, com tema claro e escuro.
+
 ## O que você ganha
 
 - **Deploy por `git push`** (SSH ou HTTP) **ou por webhook do GitHub** (a cada push no seu repositório): o build roda no aparelho e o log aparece no terminal e no painel.
