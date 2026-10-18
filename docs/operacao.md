@@ -184,6 +184,16 @@ Quem instalou antes do `droid update` existir precisa fazer uma atualização **
 
 ## 7. Checklist do aparelho (24/7)
 
+Antes de ler a lista, rode `droid doctor`: ele confere sozinho o que dá para conferir e diz como corrigir cada problema.
+
+```bash
+droid doctor              # ✓ ok · ! aviso · ✗ falha, com "→ como corrigir"
+droid doctor --report     # texto em Markdown, sem tokens, para colar num relato de problema
+droid doctor --offline    # sem consultas de rede (DNS e relógio)
+```
+
+Verifica: origem do Termux (F-Droid ou GitHub, não Play Store), `droidd`, `sshd`, Caddy e túnel, Termux:API, bateria, memória, disco, script do Termux:Boot, permissões do SSH e da `master.key`, clone do código (para o `droid update`), DNS e relógio. Sai com código 1 se houver falha. **Não consegue ver** a isenção de bateria nem o *phantom process killer*: esses dois seguem na lista abaixo.
+
 - Isente o Termux (e Termux:API/Boot) da otimização de bateria; no One UI: *Apps que nunca dormem*. Fixe o Termux nos recentes.
 - Desative o **phantom process killer** (Android 12+) via adb sem fio — passo a passo em [fase-1/1A-ambiente.md](fase-1/1A-ambiente.md). No PoC (Android 13) isso manteve os serviços vivos por 68 h.
 - Mantenha na tomada, ventilado, sem capa; evite 100 % de carga contínua. O PoC chegou a 41,7 °C na bateria em uso normal.

@@ -129,6 +129,7 @@ droid github meu-app connect https://github.com/dono/repo   # deploy a cada push
 droid update                    # atualiza o droidpaas
 droid settings                  # configurações globais
 droid status                    # saúde do servidor
+droid doctor                    # confere o ambiente do Termux e diz como corrigir
 ```
 
 Para **atualizar** para uma versão nova (inclusive mudanças no painel, que vem embutido no programa):
@@ -146,11 +147,10 @@ Guia completo (portas, túnel, backup, atualização, problemas comuns): [docs/o
 
 Prioridades atuais (análise completa, com o que foi verificado e o que não foi, em [docs/roadmap.md](docs/roadmap.md)):
 
-1. `droid doctor`: confere o ambiente do Termux e diz como corrigir cada problema.
-2. Deploy por polling do GitHub, sem precisar de domínio nem de webhook.
-3. Alertas (crash loop, deploy falho, temperatura) e *heartbeat* para saber que o servidor caiu.
-4. 2FA no painel e backup fora do aparelho, incluindo os dados dos apps.
-5. App Android que instala e inicia tudo por botões ([planejamento](docs/planejamento-apk.md)).
+1. Deploy por polling do GitHub, sem precisar de domínio nem de webhook.
+2. Alertas (crash loop, deploy falho, temperatura) e *heartbeat* para saber que o servidor caiu.
+3. 2FA no painel e backup fora do aparelho, incluindo os dados dos apps.
+4. App Android que instala e inicia tudo por botões ([planejamento](docs/planejamento-apk.md)).
 
 ## Como o projeto foi construído
 

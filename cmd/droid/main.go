@@ -28,6 +28,7 @@ const usage = `uso: droid [--json] <comando> [args]
   settings [set CHAVE=VALOR...]    (base_domain, panel_hostname, keep_releases, git_http_enabled)
   status
   backup [--out ARQUIVO] [--with-key]
+  doctor [--report] [--offline]            confere o ambiente do Termux e diz como corrigir cada problema
   update [--check] [--ref TAG] [--force]   atualiza o droidpaas pelo clone (~/droidpaas-src) e volta atrás se falhar
   version
 `

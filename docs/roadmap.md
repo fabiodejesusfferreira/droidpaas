@@ -8,7 +8,7 @@ Veredito: **Fazer** (vale e é viável), **Depois** (vale, mas depende de outra 
 
 | # | Item | Veredito | Esforço | Por quê |
 |---|---|---|---|---|
-| 1 | [`droid doctor`](#6-droid-doctor) | Fazer | P | Tira as falhas de ambiente mais comuns; quase tudo já é lido pelo código |
+| 1 | [`droid doctor`](#6-droid-doctor) | **Feito** (a validar no aparelho) | P | Tira as falhas de ambiente mais comuns; quase tudo já é lido pelo código |
 | 2 | [Auto-deploy por polling](#1-auto-deploy-por-polling) | Fazer | P | Deploy contínuo sem domínio nem webhook; reaproveita o `ghsrc` |
 | 3 | [Alertas e heartbeat](#2-alertas-e-heartbeat) | Fazer | M | Hoje ninguém sabe que o celular caiu |
 | 4 | [2FA com TOTP](#4-2fa-com-totp) | Fazer | P | Fecha o ponto fraco do painel fora do Cloudflare Access |
@@ -110,7 +110,7 @@ Não entram agora: cluster entre aparelhos, armazenamento USB/SD, terminal web, 
 
 ### 6. `droid doctor`
 
-- **Veredito: fazer primeiro. Esforço: P.**
+- **Veredito: feito (2026-10-17); falta rodar no aparelho real.** Implementação em `cmd/droid/doctor.go`; uso em `docs/operacao.md` §7.
 - **O que verifica**, cada falha com "como corrigir": origem do Termux (F-Droid ou GitHub, não Play Store; o comando `termux-info` informa a variante, a confirmar no aparelho), `sshd` e `runsvdir` de pé, `droidd`, Caddy e túnel saudáveis, Termux:API respondendo, script do Termux:Boot, permissões de `authorized_keys`, espaço em disco, DNS, relógio (comparando com o cabeçalho `Date` de uma resposta HTTPS) e saúde e temperatura da bateria.
 - **Limite:** a isenção de bateria e o *phantom process killer* talvez não sejam legíveis sem `adb`; o que não for detectável vira instrução na saída.
 - **Bônus:** `droid doctor --report` gera um texto em Markdown, **sem tokens nem senhas**, para anexar a relatos de problema.
